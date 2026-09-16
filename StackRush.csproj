@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>StackRush</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="dist\**\*" />
+    <Content Include="dist\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="Properties\launchSettings.json" CopyToPublishDirectory="Never" />
+    <Content Update="package.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+</Project>

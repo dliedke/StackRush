@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101114">
+  <meta name="description" content="Entre no flow de Stack Rush. Um jogo de blocos com peças multicoloridas, raios, poderes especiais, bombas, bichinhos e música arcade.">
+  <title>Stack Rush — Entre no flow</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23101114'/%3E%3Cg fill='%23d2f86a'%3E%3Crect x='5' y='6' width='9' height='9' rx='1.5'/%3E%3Crect x='16' y='6' width='9' height='9' rx='1.5'/%3E%3Crect x='16' y='17' width='9' height='9' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+<svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-muted" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4Zm5 4 6 6m0-6-6 6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 4v6m8 4v6"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 3h10v7a5 5 0 0 1-10 0ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 3v6m-4 0h8"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 6h3c5 0 7 12 12 12h3m-4-4 4 4-4 4M3 18h3c2 0 3-2 5-5m2-3c2-3 3-4 5-4h3m-4-4 4 4-4 4"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 3C7 2 1 11 7 17s15 0 13-14ZM5 21l10-11"/></symbol>
+</defs></svg>
+<header class="site-header">
+  <a href="./" class="brand" aria-label="Stack Rush, início"><span class="brand-mark"><i></i><i></i><i></i></span><span>STACK<span class="brand-rush">RUSH</span><sup>®</sup></span></a>
+  <nav aria-label="Navegação principal"><span class="nav-active">Jogar</span><button type="button" id="help-nav">Como jogar <span>↗</span></button></nav>
+  <div class="header-actions"><span class="solo-badge">SOLO ARCADE</span><span class="header-divider"></span><button class="icon-button" id="sound-button" aria-label="Desativar som" aria-pressed="true" title="Som"><svg class="icon"><use href="#i-volume"/></svg></button><button class="icon-button" id="settings-button" aria-label="Configurações" title="Configurações"><svg class="icon"><use href="#i-settings"/></svg></button></div>
+</header>
+<main id="game-app">
+  <section class="arena-heading" aria-label="Seleção de modo">
+    <div><div class="eyebrow">ENCAIXE. COMBINE. REPITA.</div><h1>Entre no <em>flow.</em></h1></div>
+    <div class="mode-controls">
+      <div class="mode-switch" role="group" aria-label="Modo de jogo">
+        <button data-mode="rush" class="active" aria-pressed="true"><svg class="icon"><use href="#i-bolt"/></svg>Rush<span class="mode-mini">2 MIN</span></button>
+        <button data-mode="sprint" aria-pressed="false"><svg class="icon"><use href="#i-target"/></svg>Sprint<span class="mode-mini">40</span></button>
+        <button data-mode="zen" aria-pressed="false"><svg class="icon"><use href="#i-leaf"/></svg>Zen</button>
+      </div>
+      <div class="rush-duration-switch" role="group" aria-label="Duração do Rush">
+        <span class="rush-duration-label">RUSH</span>
+        <button type="button" data-rush-mode="rush1" aria-pressed="false">1 min</button>
+        <button type="button" data-rush-mode="rush" class="active" aria-pressed="true">2 min</button>
+        <button type="button" data-rush-mode="rush5" aria-pressed="false">5 min</button>
+        <button type="button" data-rush-mode="rush10" aria-pressed="false">10 min</button>
+      </div>
+    </div>
+  </section>
+  <div class="party-strip">
+    <div class="mix-info"><span class="mix-chip"><span aria-hidden="true">✦</span><span id="mix-label">MIX SURPRESA</span></span><span id="mix-description">Raio. Prisma. Diagonal. E mais surpresas.</span></div>
+    <div class="music-controls"><button class="music-pill" id="music-button" aria-label="Desativar música" aria-pressed="true" title="Ativar ou desativar música"><span class="equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="music-track">Trilha aleatória</span><span id="music-state">ao jogar</span></button><button id="shuffle-music-button" class="icon-button shuffle-button" aria-label="Sortear próxima música" title="Sortear próxima música"><svg class="icon"><use href="#i-shuffle"/></svg></button></div>
+  </div>
+  <div class="arena-grid">
+    <aside class="left-panel">
+      <section class="score-panel panel">
+        <div class="panel-label"><span>SUA PARTIDA</span><span class="small-tag" id="mode-tag">RUSH</span></div>
+        <div class="score-label">Pontuação</div><div id="score" class="score-number">000000</div>
+        <div class="score-rule"></div>
+        <div class="stat-pair"><div><span>Nível</span><strong id="level">01</strong></div><div><span>Linhas</span><strong id="lines">00</strong></div></div>
+        <div class="timer-row"><svg class="icon"><use href="#i-clock"/></svg><span id="timer-label">Tempo restante</span><strong id="timer">02:00</strong></div>
+        <progress id="time-progress" max="120000" value="120000" aria-label="Tempo restante"></progress>
+      </section>
+      <section class="power-panel panel" id="power-panel">
+        <div class="panel-label"><span><svg class="icon"><use href="#i-bolt"/></svg> OVERDRIVE</span><span class="power-percent" id="energy-number">0%</span></div>
+        <div class="energy-segments" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <p id="power-description">Encaixe peças e limpe linhas para carregar seu pulso.</p>
+        <button class="power-button" id="power-button" disabled><svg class="icon"><use href="#i-bolt"/></svg><span id="power-label">Carregando pulso</span><kbd>F</kbd></button>
+        <div class="power-foot">Limpa 3 fileiras <span>·</span> Pontos ×2 por 8s</div>
+      </section>
+        <div class="personal-record"><svg class="icon"><use href="#i-trophy"/></svg><div class="record-copy"><span id="record-label">Seu recorde · Rush 2 min</span><strong id="record">—</strong></div><button type="button" class="records-button" id="records-button">Ver recordes</button></div>
+    </aside>
+    <section class="game-section" aria-label="Arena de jogo">
+      <div class="game-topline"><span class="game-state" id="game-state">PRONTO PARA JOGAR</span><div><button id="pause-button" class="icon-button compact" disabled aria-label="Pausar partida" title="Pausar (Esc)"><svg class="icon"><use href="#i-pause"/></svg></button><button id="restart-button" class="icon-button compact" aria-label="Recomeçar partida" title="Recomeçar (R)"><svg class="icon"><use href="#i-reset"/></svg></button><button id="fullscreen-button" class="icon-button compact" aria-label="Tela cheia" title="Tela cheia"><svg class="icon"><use href="#i-expand"/></svg></button></div></div>
+      <div class="play-stage" id="play-stage">
+        <div class="piece-rail hold-rail"><div class="rail-label">RESERVA</div><div class="hold-container"><canvas id="hold-canvas" width="100" height="85" aria-label="Peça reservada"></canvas><span class="empty-hold" id="empty-hold">—</span></div><kbd>C / SHIFT</kbd><span class="rail-hint">Guarde uma<br>boa jogada.</span></div>
+        <div class="board-frame" id="board-frame">
+          <canvas id="board" width="300" height="600" role="img" aria-label="Tabuleiro de blocos com 10 colunas e 20 linhas. No celular, arraste em qualquer ponto da arena para mover; uma puxada curta desce devagar, uma puxada longa solta, e um toque gira."></canvas>
+          <canvas id="fireworks" class="fireworks" width="300" height="600" aria-hidden="true"></canvas>
+          <div class="board-top-glow"></div><div id="game-callout" class="game-callout" aria-live="polite"></div>
+          <div id="game-overlay" class="game-overlay">
+            <div class="overlay-crew" aria-label="Mimi, Lumi e Pip"><span class="mascot-sprite" style="--buddy:0" aria-hidden="true"></span><span class="mascot-sprite" style="--buddy:1" aria-hidden="true"></span><span class="mascot-sprite" style="--buddy:2" aria-hidden="true"></span></div>
+            <span class="overlay-eyebrow" id="overlay-eyebrow">MENOS PENSAR. MAIS ENCAIXAR.</span>
+            <h2 id="overlay-title">PRONTO<br>PRO <em>RUSH?</em></h2>
+            <p id="overlay-description">120 segundos.<br>Faça cada linha contar.</p>
+            <div class="end-stats" id="end-stats" hidden></div>
+            <button class="play-button" id="play-button"><svg class="icon"><use href="#i-play"/></svg><span>Jogar agora</span><svg class="icon"><use href="#i-arrow"/></svg></button>
+            <span class="enter-hint">ou pressione <kbd>ENTER</kbd></span>
+          </div>
+          <div class="pickup-notice" id="pickup-notice" role="status"></div>
+          <div class="all-clear" id="all-clear" aria-hidden="true"><span>✦ TABULEIRO ZERADO ✦</span><strong>ALL CLEAR!</strong><small id="all-clear-score">+5.000 PONTOS</small><small>QUE JOGADA!</small></div>
+          <div class="board-floor"></div>
+        </div>
+        <div class="piece-rail next-rail"><div class="rail-label">PRÓXIMAS</div><div class="next-container"><canvas id="next-canvas" width="100" height="335" aria-label="Próximas cinco peças"></canvas></div><span class="rail-hint">Pense um<br>bloco à frente.</span></div>
+      </div>
+      <div class="board-caption"><span><i></i><span id="mode-caption">DOIS MINUTOS. TUDO OU NADA.</span></span><span class="caption-key"><kbd>ESC</kbd> pausar</span></div>
+      <div class="touch-hint" aria-hidden="true"><span>↔ mover</span><span>·</span><span>toque gira</span><span>·</span><span>↓ curto desce</span><span>·</span><span>↓ longo solta</span></div>
+      <div class="loot-bar" id="loot-bar" aria-label="Bônus da partida"><span class="loot-star" aria-label="Estrelas coletadas"><span aria-hidden="true">★</span><strong id="stars-count">0</strong></span><span class="loot-buddies" aria-label="Bichinhos resgatados"><span class="mascot-sprite" data-companion style="--buddy:0" aria-hidden="true"></span><strong id="buddies-count">0</strong></span><span class="loot-bombs" aria-label="Bombas detonadas"><span aria-hidden="true">💣</span><strong id="bombs-count">0</strong></span><span id="piece-name">Encaixe sobre os bônus!</span></div>
+      <div class="touch-controls" aria-label="Controles por toque"><button data-action="hold" aria-label="Reservar peça">C</button><button data-action="left" aria-label="Mover para esquerda">←</button><button data-action="rotate" aria-label="Girar peça">↻</button><button data-action="rotate180" class="touch-half-turn" aria-label="Girar peça em 180 graus">180°</button><button data-action="right" aria-label="Mover para direita">→</button><button data-action="down" aria-label="Descer peça">↓</button><button data-action="drop" class="touch-drop" aria-label="Soltar peça">Soltar ⇓</button></div>
+      <div class="piece-power" id="piece-power" hidden>
+        <span class="piece-power-symbol" id="piece-power-symbol" aria-hidden="true">ϟ</span>
+        <div class="piece-power-copy"><strong id="piece-power-name">Raio · ativa ao encaixar</strong><span id="piece-power-description">Limpa as colunas tocadas pela peça.</span></div>
+      </div>
+      <div id="buddy-effects" class="buddy-effects" hidden></div>
+    </section>
+    <aside class="right-panel">
+      <section class="challenge-panel panel"><div class="panel-label"><span>DESAFIO DA PARTIDA</span><svg class="icon"><use href="#i-target"/></svg></div><div class="companion"><span class="mascot-sprite" data-companion style="--buddy:0" role="img" aria-label="Mimi"></span><div class="buddy-bubble" id="buddy-message">Bora encaixar?</div></div><span class="buddy-name" id="buddy-name">Mimi está na torcida</span><h2 id="challenge-title">Encontre seu ritmo</h2><p id="challenge-description">Limpe 8 linhas em uma partida.<br>O flow começa aqui.</p><div class="challenge-progress-label"><span>Progresso</span><strong id="challenge-count">0 / 8</strong></div><progress id="challenge-progress" value="0" max="8" aria-label="Progresso do desafio"></progress></section>
+      <section class="controls-panel"><div class="panel-label"><span>NA PONTA DOS DEDOS</span><svg class="icon"><use href="#i-keyboard"/></svg></div><dl class="key-list"><div><dt>Mover</dt><dd><kbd>←</kbd><kbd>→</kbd></dd></div><div><dt>Girar</dt><dd><kbd>↑</kbd><span>ou</span><kbd>X</kbd></dd></div><div><dt>Girar 180°</dt><dd><kbd>A</kbd></dd></div><div><dt>Descer</dt><dd><kbd>↓</kbd></dd></div><div><dt>Soltar</dt><dd><kbd class="wide-key">ESPAÇO</kbd></dd></div><div><dt>Reservar</dt><dd><kbd>C</kbd><span>ou</span><kbd>SHIFT</kbd></dd></div><div><dt>Ativar pulso</dt><dd><kbd>F</kbd></dd></div></dl><button class="text-button" id="all-controls">Todos os controles <svg class="icon"><use href="#i-arrow"/></svg></button></section>
+      <div class="combo-tip"><span class="combo-icon">×2</span><p><strong>Uma linha puxa a outra.</strong>Limpe linhas em peças seguidas para multiplicar seus combos.</p></div>
+    </aside>
+  </div>
+  <footer class="arena-footer"><span>FEITO PARA AQUELE “SÓ MAIS UMA”.</span><div><span>15 peças. Uma turma inteira no flow.</span><span class="footer-mark">SR / MIX</span></div></footer>
+</main>
+<div class="sr-only" id="announcer" role="status" aria-live="polite"></div>
+<dialog id="help-dialog" class="modal"><div class="modal-heading"><div><span class="eyebrow">APRENDA O BÁSICO</span><h2>Encontre o encaixe.</h2></div><button class="icon-button" data-close aria-label="Fechar instruções"><svg class="icon"><use href="#i-close"/></svg></button></div><p>Complete fileiras horizontais para limpar o tabuleiro. Se as peças chegarem ao topo, a partida acaba.</p><div class="help-grid"><div><h3>Movimento</h3><dl class="key-list"><div><dt>Mover</dt><dd><kbd>←</kbd><kbd>→</kbd></dd></div><div><dt>Girar à direita</dt><dd><kbd>↑</kbd><kbd>X</kbd></dd></div><div><dt>Girar à esquerda</dt><dd><kbd>Z</kbd></dd></div><div><dt>Girar 180°</dt><dd><kbd>A</kbd></dd></div><div><dt>Descer devagar</dt><dd><kbd>↓</kbd></dd></div><div><dt>Soltar de uma vez</dt><dd><kbd>ESPAÇO</kbd></dd></div></dl></div><div><h3>Sua estratégia</h3><dl class="key-list"><div><dt>Reservar peça</dt><dd><kbd>C</kbd><kbd>SHIFT</kbd></dd></div><div><dt>Pulso (Rush)</dt><dd><kbd>F</kbd></dd></div><div><dt>Pausar</dt><dd><kbd>ESC</kbd><kbd>P</kbd></dd></div><div><dt>Recomeçar</dt><dd><kbd>R</kbd></dd></div><div><dt>Iniciar / continuar</dt><dd><kbd>ENTER</kbd></dd></div></dl></div></div><div class="help-note"><svg class="icon"><use href="#i-bolt"/></svg><p><strong>O Rush tem um truque extra.</strong> Cada peça carrega energia; linhas e combos dão um bônus. Ao atingir 100%, pressione F: o pulso remove até 3 fileiras ocupadas e dobra os pontos das linhas por 8 segundos.</p></div><p class="help-small">A peça contornada mostra onde sua peça vai cair. Você pode usar a reserva uma vez por peça. No Sprint 40, as sete peças são clássicas. Rush e Zen têm quatro formatos extras, bombas, três peças com poderes e bônus surpresa. No celular, arraste para os lados, toque na peça para girar e puxe para baixo para soltar de uma vez.</p><section class="surprise-guide"><h3>Surpresas no tabuleiro</h3><canvas id="mix-canvas" width="450" height="56" aria-label="Peças especiais: Mini, Dupla, Cantinho, Ferradura, Bomba, Raio, Prisma e Diagonal"></canvas><p>Peças extras: Mini (1 bloco), Dupla (2), Cantinho (3) e Ferradura (5). Aperte A para girar 180° de uma vez.</p><p>Encaixe uma peça sobre uma estrela ou um bichinho antes que ele desapareça. Estrelas valem 200 pontos e resgates, 500, multiplicados pelo nível. Durante o Overdrive, esses bônus também valem o dobro.</p><p><strong>Bombas:</strong> solte com Espaço ou deixe encaixar. A explosão alcança até 9 × 9 casas, resgata os bichinhos na área e derruba os blocos restantes. Cada bloco destruído dá 30 pontos por nível. Uma bomba e uma peça com poder aparecem em cada grupo de dez peças no Rush e no Zen.</p><div class="charged-guide"><h3>Três peças, três superpoderes</h3>
+<p>Elas brilham em várias cores e ativam o poder ao encaixar. Podem ir para a reserva e são sorteadas sem repetir o mesmo poder em sequência.</p>
+<p>A Diagonal também se consome ao ativar: escolha a inclinação com as rotações antes de soltar.</p>
+<h3>Cinco novos amigos com poderes</h3>
+<p><strong>Nox, o morcego:</strong> vira o tabuleiro de cabeça para baixo por 10s. Os movimentos laterais acompanham a tela.</p>
+<p><strong>Turbo, o coelho:</strong> deixa a queda super-rápida por 10s!</p>
+<p><strong>Lino, o dragão:</strong> as próximas peças sorteadas são I por 10s. A reserva continua disponível.</p>
+<p><strong>Broca, a toupeira:</strong> ao encaixar qualquer peça, destrói todos os blocos abaixo dela nas colunas que ela ocupa, por 10s. Cada bloco vale 25 pontos por nível.</p>
+<p><strong>Sexto, o sapinho:</strong> por 15s, seis blocos em qualquer posição da mesma linha já bastam para limpá-la ao encaixar.</p>
+<p>Os oito amigos aparecem em ordem embaralhada. Poderes diferentes podem se combinar; resgatar o mesmo amigo renova seu relógio. A pausa congela os efeitos.</p>
+<dl class="power-guide-list">
+<div><dt><span aria-hidden="true">ϟ</span> Raio</dt><dd>Apaga todos os blocos nas colunas tocadas pela peça, de cima a baixo. Na vertical, atinge uma coluna; na horizontal, três. Também coleta os bônus no caminho.</dd></div>
+<div><dt><span aria-hidden="true">◇</span> Prisma</dt><dd>Apaga a cor mais presente em todo o tabuleiro. O aviso mostra a cor-alvo e o contorno marca os blocos que vão sumir.</dd></div>
+<div><dt><span aria-hidden="true">╲</span> Diagonal</dt><dd>Apaga uma linha diagonal atravessando o tabuleiro e faz os blocos restantes cair. Gire a peça para escolher entre as duas inclinações.</dd></div>
+</dl><p>Raio e Prisma se consomem ao ativar e fazem os blocos restantes cair. Cada bloco removido vale 25 pontos por nível, em dobro no Overdrive. Se zerar tudo, tem ALL CLEAR com fogos!</p></div><p><strong>Trilha aleatória:</strong> Neon Drive, Disco Cometa e Star Runner têm melodias e ritmos próprios. As três tocam em ordem aleatória, sem repetir uma faixa seguida. Use o botão de embaralhar para trocar. Música e efeitos sonoros têm controles separados.</p></section><button class="play-button modal-done" data-close>Entendi. Bora jogar! <svg class="icon"><use href="#i-arrow"/></svg></button></dialog>
+<dialog id="settings-dialog" class="modal settings-modal"><div class="modal-heading"><div><span class="eyebrow">DO SEU JEITO</span><h2>Ajuste seu flow.</h2></div><button class="icon-button" data-close aria-label="Fechar configurações"><svg class="icon"><use href="#i-close"/></svg></button></div><label class="setting-row language-row"><span><strong>Idioma</strong><small>Detectado pelo navegador. Você pode trocar aqui.</small></span><select id="language-setting" aria-label="Idioma"><option value="pt" lang="pt-BR">Português</option><option value="en" lang="en">English</option></select></label><label class="setting-row"><span><strong>Música arcade</strong><small>Três músicas em ordem aleatória.</small></span><input type="checkbox" role="switch" id="music-setting" checked></label><div class="music-volume-control"><label for="music-volume">Volume da música <output id="music-volume-label" for="music-volume">32%</output></label><input type="range" id="music-volume" min="0" max="100" step="1" value="32" aria-label="Volume da música"></div><label class="setting-row"><span><strong>Efeitos sonoros</strong><small>Um som para cada boa jogada.</small></span><input type="checkbox" role="switch" id="sound-setting" checked></label><label class="setting-row"><span><strong>Efeitos de movimento</strong><small>Partículas, brilho, raios e fogos.</small></span><input type="checkbox" role="switch" id="effects-setting" checked></label><label class="setting-row"><span><strong>Mostrar peça fantasma</strong><small>Veja o encaixe antes de soltar.</small></span><input type="checkbox" role="switch" id="ghost-setting" checked></label><p class="help-small">Estas preferências ficam salvas neste dispositivo.</p><button class="play-button modal-done" data-close>Pronto <svg class="icon"><use href="#i-check"/></svg></button></dialog>
+<dialog id="records-dialog" class="modal records-modal"><div class="modal-heading"><div><span class="eyebrow">SEUS MELHORES</span><h2>Recordes de Rush.</h2></div><button class="icon-button" data-close aria-label="Fechar recordes"><svg class="icon"><use href="#i-close"/></svg></button></div><p>Uma duração, um desafio, um recorde. Seus melhores scores ficam salvos neste dispositivo.</p><div class="records-list" id="records-list" aria-live="polite"></div><p class="help-small">O recorde é atualizado quando você termina uma partida com mais pontos.</p><button class="play-button modal-done" data-close>Voltar para a arena <svg class="icon"><use href="#i-arrow"/></svg></button></dialog>
+<dialog id="confirm-dialog" class="modal confirm-modal"><div class="modal-heading"><h2>Mais uma tentativa?</h2><button class="icon-button" data-close aria-label="Cancelar"><svg class="icon"><use href="#i-close"/></svg></button></div><p id="confirm-text">O progresso desta partida será descartado.</p><div class="confirm-actions"><button class="secondary-button" data-close>Continuar partida</button><button class="play-button" id="confirm-button">Recomeçar</button></div></dialog>
+</body>
+</html>

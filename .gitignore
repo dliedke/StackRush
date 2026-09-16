@@ -1,0 +1,14 @@
+# Visual Studio and .NET build output
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.pubxml.user
+TestResults/
+
+# Optional Node.js dependencies
+node_modules/
+npm-debug.log*
+
+# dist/ contains the game's source files and must remain tracked.
