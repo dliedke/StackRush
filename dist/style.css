@@ -106,3 +106,7 @@
 .rail-power.active .rail-power-meter{background:#31382a}
 }
 @media(prefers-reduced-motion:reduce){.rail-power:enabled{animation:none}}
+/* Fora de uma partida em andamento, a página rola normalmente, inclusive sobre o tabuleiro. */
+#board{touch-action:auto}
+.play-stage.playing #board{touch-action:none}
+@media(max-width:720px){.play-stage{touch-action:auto}.play-stage.playing{touch-action:none}}

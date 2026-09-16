@@ -350,6 +350,7 @@ function syncUI() {
   $('power-button').disabled=!ready||!isRush||game.state!=='playing'||over;
   text('power-label',!isRush?'Exclusivo do Rush':over?'Overdrive ativo':ready?'Ativar pulso':'Carregando pulso');
   text('power-description',!isRush?(game.mode==='zen'?'Peças com poderes, estrelas e bichinhos. Jogue no seu tempo, sem pulso.':'Sete peças clássicas. Complete as 40 linhas no seu melhor tempo.'):over?'Aproveite: os pontos das linhas estão valendo o dobro!':ready?'Sua energia está no máximo. Solte o pulso e abra espaço!':'Encaixe peças e limpe linhas para carregar seu pulso.');
+  $('play-stage').classList.toggle('playing',game.state==='playing');
   const rail=$('rail-power-button');rail.hidden=!isRush;rail.disabled=$('power-button').disabled;rail.classList.toggle('active',over);
   text('rail-power-value',over?`${Math.ceil(game.overdrive/1000)}s`:`${game.energy}%`);
   $('rail-power-fill').style.width=(over?game.overdrive/80:game.energy)+'%';
