@@ -1,4 +1,4 @@
-import { COLORS } from './engine.mjs';
+import { COLORS } from './engine.mjs?v=20260916';
 
 const HUES = { VOLT: 45, PRISM: 305, DIAG: 185 };
 

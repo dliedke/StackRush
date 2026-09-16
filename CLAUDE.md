@@ -46,4 +46,8 @@ Tests are Node.js `node:test` tests, not .NET tests. There is no lint or build s
 - Code style is compact: short lines are often joined, minimal comments, 2-space indentation,
   single quotes. Match the surrounding density rather than reformatting.
 - Keep modules dependency-free and loadable directly by the browser (relative `./x.mjs` imports).
+- Assets are cache-busted with a shared `?v=<date>` token: `index.html` loads `style.css` and
+  `app.mjs` with it, and every module import carries the same token. Bump it in **all** places
+  whenever anything in `dist/` changes (`grep -rl 'v=OLD' dist | xargs sed -i 's/v=OLD/v=NEW/g'`),
+  otherwise GitHub Pages (`max-age=600`) can serve a fresh `index.html` with a stale `style.css`.
 - `Program.cs` carries a Daniel Liedke copyright header; preserve it.

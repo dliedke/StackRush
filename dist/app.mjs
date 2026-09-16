@@ -1,9 +1,9 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs';
-import { Game, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, cells } from './engine.mjs';
-import { ArcadeAudio } from './audio.mjs';
-import { BUDDY_POWERS } from './engine.mjs';
-import { Fireworks } from './fireworks.mjs';
-import { drawPowerBlock, drawCharge, PowerEffects } from './power-fx.mjs';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260916';
+import { Game, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, cells } from './engine.mjs?v=20260916';
+import { ArcadeAudio } from './audio.mjs?v=20260916';
+import { BUDDY_POWERS } from './engine.mjs?v=20260916';
+import { Fireworks } from './fireworks.mjs?v=20260916';
+import { drawPowerBlock, drawCharge, PowerEffects } from './power-fx.mjs?v=20260916';
 
 const $ = id => document.getElementById(id);
 const game = new Game();

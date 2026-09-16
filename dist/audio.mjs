@@ -1,5 +1,5 @@
-import { TRACKS, arrangementAt } from './tracks.mjs';
-export { TRACKS } from './tracks.mjs';
+import { TRACKS, arrangementAt } from './tracks.mjs?v=20260916';
+export { TRACKS } from './tracks.mjs?v=20260916';
 const hz = midi => 440 * 2 ** ((midi - 69) / 12);
 
 export class ArcadeAudio {
