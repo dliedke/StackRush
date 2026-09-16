@@ -21,7 +21,6 @@ No download. No install. No "please create an account to continue."
 Just click and start stacking:
 
 - 🎮 **[Play Stack Rush](https://dliedke.github.io/StackRush/dist/)**
-- 🔗 **[Direct game page](https://dliedke.github.io/StackRush/dist/index.html)**
 
 Works on desktop *and* mobile. Swipe, tap, drop, win. 📱
 
