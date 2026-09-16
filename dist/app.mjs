@@ -350,6 +350,11 @@ function syncUI() {
   $('power-button').disabled=!ready||!isRush||game.state!=='playing'||over;
   text('power-label',!isRush?'Exclusivo do Rush':over?'Overdrive ativo':ready?'Ativar pulso':'Carregando pulso');
   text('power-description',!isRush?(game.mode==='zen'?'Peças com poderes, estrelas e bichinhos. Jogue no seu tempo, sem pulso.':'Sete peças clássicas. Complete as 40 linhas no seu melhor tempo.'):over?'Aproveite: os pontos das linhas estão valendo o dobro!':ready?'Sua energia está no máximo. Solte o pulso e abra espaço!':'Encaixe peças e limpe linhas para carregar seu pulso.');
+  $('play-stage').classList.toggle('playing',game.state==='playing');
+  const rail=$('rail-power-button');rail.hidden=!isRush;rail.disabled=$('power-button').disabled;rail.classList.toggle('active',over);
+  text('rail-power-value',over?`${Math.ceil(game.overdrive/1000)}s`:`${game.energy}%`);
+  $('rail-power-fill').style.width=(over?game.overdrive/80:game.energy)+'%';
+  setLabel(rail,over?'Overdrive ativo':ready?'Ativar pulso do Overdrive':'Carregando pulso');
   $('power-panel').classList.toggle('unavailable',!isRush);$('board-frame').classList.toggle('overdrive',over);
   text('game-state',game.state==='playing'?(over?'OVERDRIVE · PONTOS ×2':'NO FLOW · PARTIDA EM ANDAMENTO'):game.state==='paused'?'PARTIDA PAUSADA':game.state==='over'?'PARTIDA ENCERRADA':'PRONTO PARA JOGAR');
   const target=game.mode==='sprint'?40:8, completed=game.lines>=target;
@@ -425,6 +430,7 @@ function doAction(action) {
 }
 function touchBoardDown(event) {
   if(game.state!=='playing'||!['touch','pen'].includes(event.pointerType))return;
+  if(event.target.closest('button'))return;
   const rect=$('board').getBoundingClientRect();
   if(event.clientY<rect.top-36||event.clientY>rect.bottom+36)return;
   event.preventDefault(); prepareAudio();
@@ -473,7 +479,7 @@ function applyPrefs() {
 $('play-button').addEventListener('click',startGame);
 $('pause-button').addEventListener('click',togglePause);
 $('restart-button').addEventListener('click',()=>confirmThen(()=>{resetGame();startGame();}));
-$('power-button').addEventListener('click',()=>doAction('pulse'));
+['power-button','rail-power-button'].forEach(id=>$(id).addEventListener('click',()=>doAction('pulse')));
 document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>requestMode(button.dataset.mode==='rush'?selectedRushMode:button.dataset.mode)));
 document.querySelectorAll('[data-rush-mode]').forEach(button=>button.addEventListener('click',()=>requestMode(button.dataset.rushMode)));
 $('records-button').addEventListener('click',()=>{renderRecords();openDialog($('records-dialog'));});

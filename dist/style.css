@@ -89,3 +89,24 @@
 @media(max-width:720px){.play-stage{width:100vw;margin-left:calc((100% - 100vw)/2);margin-right:calc((100% - 100vw)/2);padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));touch-action:none}}
 /* The language control stays usable in compact mobile settings. */
 .language-row{gap:16px}.language-row>span{min-width:0}.language-row select{flex-shrink:0;max-width:45%;font:inherit;color:var(--text,#f4f4f5);background:#25272d;border:1px solid #484a53;border-radius:8px;padding:10px 8px;cursor:pointer}.language-row select:focus-visible{outline:2px solid #d2f86a;outline-offset:3px}
+
+/* No celular, o pulso do Overdrive fica logo abaixo das próximas peças, ao alcance do polegar. */
+.rail-power,.rail-power[hidden]{display:none}
+@keyframes rail-power-ready{0%,100%{box-shadow:0 0 10px #d2f82533}50%{box-shadow:0 0 22px #d2f82599}}
+@media(max-width:720px){
+.power-panel{display:none}
+.rail-power{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;margin-top:10px;padding:7px 4px 6px;border-radius:8px;background:#292e22;border:1px solid #3e4730;color:#b1bb9e;font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.3px;line-height:1}
+.rail-power[hidden]{display:none}
+.rail-power .icon{width:16px;height:16px}
+.rail-power-meter{width:100%;height:4px;border-radius:2px;background:#31382a;overflow:hidden}
+.rail-power-meter i{display:block;height:100%;width:0;background:var(--lime);border-radius:2px;transition:width .2s}
+.rail-power:enabled{background:var(--lime);color:#19210d;border-color:var(--lime);box-shadow:0 0 18px #d2f82533;animation:rail-power-ready 1.1s ease-in-out infinite}
+.rail-power:enabled .rail-power-meter{background:#1c2a0a}
+.rail-power.active{background:#1f2a12;border-color:var(--lime);color:var(--lime);box-shadow:0 0 18px #d2f82533;animation:none}
+.rail-power.active .rail-power-meter{background:#31382a}
+}
+@media(prefers-reduced-motion:reduce){.rail-power:enabled{animation:none}}
+/* Fora de uma partida em andamento, a página rola normalmente, inclusive sobre o tabuleiro. */
+#board{touch-action:auto}
+.play-stage.playing #board{touch-action:none}
+@media(max-width:720px){.play-stage{touch-action:auto}.play-stage.playing{touch-action:none}}
