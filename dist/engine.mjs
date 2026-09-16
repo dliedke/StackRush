@@ -11,11 +11,14 @@ export const SHAPES = {
   BOMB: [[1]], U: [[1,0,1],[1,1,1],[0,0,0]],
   VOLT: [[0,1,0],[0,1,0],[0,1,0]], PRISM: [[1,1],[1,1]], DIAG: [[1,0,0],[0,1,0],[0,0,1]]
 };
+export const BUDDIES = ['Mimi', 'Lumi', 'Pip', 'Nox', 'Turbo', 'Lino', 'Broca', 'Sexto', 'Polvi', 'Nuvi'];
+export const BUDDY_TYPES = BUDDIES.map((_,i)=>`BUDDY${i}`);
+BUDDY_TYPES.forEach((type,i)=>{SHAPES[type]=[[1]];COLORS[type]='#f49ed8';});
 export const CLASSIC_TYPES = ['I','O','T','S','Z','J','L'];
 export const EXTRA_TYPES = ['DOT','DUO','CORNER','U'];
 export const POWER_TYPES = ['VOLT','PRISM','DIAG'];
 export const SPECIAL_TYPES = [...EXTRA_TYPES,'BOMB',...POWER_TYPES];
-export const PIECE_NAMES = { I:'I', O:'O', T:'T', S:'S', Z:'Z', J:'J', L:'L', DOT:'Mini', DUO:'Dupla', CORNER:'Cantinho', U:'Ferradura', BOMB:'Bomba', VOLT:'Raio', PRISM:'Prisma', DIAG:'Diagonal' };
+export const PIECE_NAMES = { I:'I', O:'O', T:'T', S:'S', Z:'Z', J:'J', L:'L', DOT:'Mini', DUO:'Dupla', CORNER:'Cantinho', U:'Ferradura', BOMB:'Bomba', VOLT:'Raio', PRISM:'Prisma', DIAG:'Diagonal', ...Object.fromEntries(BUDDY_TYPES.map((type,i)=>[type,BUDDIES[i]])) };
 export const POWERS = {
   VOLT: { label:'RAIO', symbol:'ϟ', description:'Limpa as colunas tocadas pela peça. Gire para atingir até 3!' },
   PRISM: { label:'PRISMA', symbol:'◇', description:'Apaga todos os blocos da cor mais presente.' },
@@ -23,13 +26,14 @@ export const POWERS = {
 };
 export const BOMB_RADIUS = 4;
 const HALF_TURN_KICKS = [[0,0],[0,-1],[-1,0],[1,0],[0,1],[-2,0],[2,0],[-1,-1],[1,-1],[0,-2]];
-export const BUDDIES = ['Mimi', 'Lumi', 'Pip', 'Nox', 'Turbo', 'Lino', 'Broca', 'Sexto'];
 export const BUDDY_POWERS = {
   3: { key:'flip', label:'De cabeça para baixo', duration:10000 },
   4: { key:'speed', label:'Queda turbo', duration:10000 },
-  5: { key:'onlyI', label:'Só peças I', duration:10000 },
+  5: { key:'onlyI', label:'4 peças I e 2 O', pieces:['I','I','O','I','I','O'] },
   6: { key:'drill', label:'Perfuração até o fundo', duration:10000 },
-  7: { key:'six', label:'Linhas com 6 blocos', duration:15000 }
+  7: { key:'six', label:'Linhas com 6 blocos', duration:15000 },
+  8: { key:'gravity', label:'Gravidade nos blocos', duration:10000 },
+  9: { key:'rain', label:'Chuva de bichinhos', drops:5 }
 };
 const SPECIAL_KICKS = [[0,0],[-1,0],[1,0],[-2,0],[2,0],[0,-1],[0,-2]];
 export const MODES = {
@@ -66,7 +70,7 @@ export class Game {
   reset(mode = this.mode) {
     if (!Object.hasOwn(MODES, mode)) throw new Error('Modo inválido.');
     this.mode = mode; this.state = 'ready'; this.board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
-    this.queue = []; this.specialBag = []; this.bonuses = []; this.bonusSerial = 0; this.nextBonusAt = 4; this.stars = 0; this.rescued = 0; this.bombs = 0; this.blastBlocks = 0; this.hold = null; this.canHold = true; this.score = 0; this.lines = 0; this.level = 1;
+    this.queue = []; this.specialBag = []; this.bonuses = []; this.bonusSerial = 0; this.bonusSpawns = 0; this.nextBonusAt = 4; this.stars = 0; this.rescued = 0; this.bombs = 0; this.blastBlocks = 0; this.hold = null; this.canHold = true; this.score = 0; this.lines = 0; this.level = 1;
     this.elapsed = 0; this.combo = -1; this.maxCombo = 0; this.pieces = 0; this.energy = 0; this.overdrive = 0;
     this.powerBag = []; this.lastPower = null; this.powerUses = 0; this.allClears = 0;
     this.buddyEffects = {}; this.buddyBag = [];
@@ -102,9 +106,9 @@ export class Game {
     }
   }
   spawn(type) {
-    type ||= this.buddyEffects.onlyI > 0 ? 'I' : this.queue.shift(); this.fillQueue();
+    type ||= this.queue.shift(); this.fillQueue();
     const matrix = SHAPES[type].map(row => [...row]);
-    this.active = { type, matrix, x: Math.floor((COLS - matrix.length) / 2), y: SPECIAL_TYPES.includes(type) || type === 'O' ? 0 : -1, rotation: 0 };
+    this.active = { type, matrix, x: Math.floor((COLS - matrix.length) / 2), y: SPECIAL_TYPES.includes(type) || BUDDY_TYPES.includes(type) || type === 'O' ? 0 : -1, rotation: 0 };
     this.gravity = 0; this.lockTime = 0; this.lockResets = 0; this.lastRotate = false;
     if (!this.valid(this.active)) this.finish(false, 'O tabuleiro encheu.');
   }
@@ -152,8 +156,9 @@ export class Game {
     const occupied = cells(this.active);
     if (occupied.some(c => c.y < 0)) { this.finish(false, 'O tabuleiro encheu.'); return; }
     let destroyed = 0;
-    this.collectBonuses(occupied);
-      if (this.buddyEffects.drill > 0) {
+    const buddyDrop = BUDDY_TYPES.includes(this.active.type);
+    if (!buddyDrop) this.collectBonuses(occupied);
+      if (!buddyDrop && this.buddyEffects.drill > 0) {
         const area = [];
         for (const x of new Set(occupied.map(c=>c.x))) {
           const top = Math.min(...occupied.filter(c=>c.x===x).map(c=>c.y));
@@ -166,7 +171,8 @@ export class Game {
         const score=destroyed*25*this.level*(this.overdrive>0?2:1);this.score+=score;
         this.events.push({type:'drill',destroyed:removed,score});
       }
-    if (this.active.type === 'BOMB') destroyed += this.detonateBomb(occupied[0]);
+    if (buddyDrop) this.dropBuddy(occupied[0]);
+    else if (this.active.type === 'BOMB') destroyed += this.detonateBomb(occupied[0]);
     else if (POWER_TYPES.includes(this.active.type)) destroyed += this.activatePower(occupied);
     else occupied.forEach(({x,y}) => { this.board[y][x] = this.active.type; });
     let tSpin = false;
@@ -176,6 +182,19 @@ export class Game {
       tSpin = filled >= 3;
     }
     this.pieces++; this.canHold = true;
+    let cleared = this.clearRows(tSpin);
+    // Polvi: loose blocks fall into the holes, and every new full row keeps the cascade going.
+    if (this.buddyEffects.gravity > 0) while (this.applyGravity()) { const more = this.clearRows(false); if (!more) break; cleared += more; }
+    if (!cleared) this.combo = -1;
+    this.checkAllClear(cleared > 0 || destroyed > 0);
+    if (cleared && this.mode === 'sprint' && this.lines >= 40) { this.finish(true, '40 linhas. Missão cumprida!'); return; }
+    if (MODES[this.mode].rush && this.overdrive <= 0) this.energy = Math.min(100, this.energy + 4);
+    this.spawn();
+    if (this.mode !== 'sprint' && this.state === 'playing' && this.pieces >= this.nextBonusAt) {
+      this.spawnBonus(); this.nextBonusAt = this.pieces + 4 + Math.floor(this.random() * 3);
+    }
+  }
+  clearRows(tSpin) {
     const cleared = [];
     this.board.forEach((row, y) => { if (row.filter(Boolean).length >= (this.buddyEffects.six > 0 ? 6 : COLS)) cleared.push(y); });
     if (cleared.length) {
@@ -191,14 +210,19 @@ export class Game {
       this.shiftBonuses(cleared);
       this.board = this.board.filter((_, y) => !cleared.includes(y));
       while (this.board.length < ROWS) this.board.unshift(Array(COLS).fill(null));
-    } else this.combo = -1;
-    this.checkAllClear(cleared.length > 0 || destroyed > 0);
-    if (cleared.length && this.mode === 'sprint' && this.lines >= 40) { this.finish(true, '40 linhas. Missão cumprida!'); return; }
-    if (MODES[this.mode].rush && this.overdrive <= 0) this.energy = Math.min(100, this.energy + 4);
-    this.spawn();
-    if (this.mode !== 'sprint' && this.state === 'playing' && this.pieces >= this.nextBonusAt) {
-      this.spawnBonus(); this.nextBonusAt = this.pieces + 4 + Math.floor(this.random() * 3);
     }
+    return cleared.length;
+  }
+  applyGravity() {
+    const moves = [];
+    for (let x = 0; x < COLS; x++) for (let y = ROWS - 1, to = ROWS - 1; y >= 0; y--) if (this.board[y][x]) { if (y !== to) moves.push({ x, from: y, to, type: this.board[y][x] }); to--; }
+    if (!moves.length) return false;
+    this.settleBoard(); this.events.push({ type: 'gravity', moves }); return true;
+  }
+  dropBuddy({x,y}) {
+    while (y > 0 && this.bonuses.some(b => b.x === x && b.y === y)) y--;
+    const bonus = { x, y, id: ++this.bonusSerial, kind: 'buddy', buddy: BUDDY_TYPES.indexOf(this.active.type), ttl: Infinity, dropped: true };
+    this.bonuses.push(bonus); this.events.push({ type: 'bonus-spawn', bonus: { ...bonus } });
   }
   checkAllClear(didClear) {
     // Falling pieces, their ghosts and collectible bonuses are not locked blocks.
@@ -284,7 +308,7 @@ export class Game {
     });
   }
   spawnBonus(first = false) {
-    if (this.mode === 'sprint' || this.state !== 'playing' || this.bonuses.length >= 2) return false;
+    if (this.mode === 'sprint' || this.state !== 'playing' || this.bonuses.filter(b => !b.dropped).length >= 2) return false;
     let candidates = [];
     if (first) candidates = cells(this.ghost()).filter(p => p.y >= 6 && !this.board[p.y][p.x]);
     if (!candidates.length) {
@@ -297,7 +321,7 @@ export class Game {
     if (!candidates.length) return false;
     const cell = candidates[Math.floor(this.random() * candidates.length)];
     const serial = ++this.bonusSerial;
-    const kind = serial % 2 === 0 ? 'buddy' : 'star';
+    const kind = ++this.bonusSpawns % 2 === 0 ? 'buddy' : 'star';
     if(kind==='buddy'&&!this.buddyBag.length){
       this.buddyBag=BUDDIES.map((_,i)=>i);
       for(let i=this.buddyBag.length-1;i>0;i--){const j=Math.floor(this.random()*(i+1));[this.buddyBag[i],this.buddyBag[j]]=[this.buddyBag[j],this.buddyBag[i]];}
@@ -316,7 +340,13 @@ export class Game {
       if (MODES[this.mode].rush) this.energy = Math.min(100, this.energy + (bonus.kind === 'star' ? 12 : 20));
       this.events.push({ type: 'bonus', bonus: { ...bonus }, score: gained });
       if(bonus.kind==='buddy'&&BUDDY_POWERS[bonus.buddy]){
-        const power=BUDDY_POWERS[bonus.buddy];this.buddyEffects[power.key]=power.duration;
+        const power=BUDDY_POWERS[bonus.buddy];
+        if(power.duration)this.buddyEffects[power.key]=power.duration;
+        if(power.pieces)this.queue.unshift(...power.pieces);
+        if(power.drops){
+          const pool=BUDDY_TYPES.filter((_,i)=>!BUDDY_POWERS[i]?.drops);
+          this.queue.unshift(...Array.from({length:power.drops},()=>pool[Math.floor(this.random()*pool.length)]));
+        }
         this.events.push({type:'buddy-power',buddy:bonus.buddy,...power});
       }
     }
@@ -352,5 +382,5 @@ export class Game {
     if (this.grounded()) { this.lockTime += dt; if (this.lockTime >= 480) this.lock(); } else this.lockTime = 0;
   }
   finish(won, reason) { this.state = 'over'; this.events.push({ type: 'finish', won, reason }); }
-  snapshot() { return { buddyEffects: {...this.buddyEffects}, mode: this.mode, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Math.ceil(b.ttl)})), nextPieces: this.buddyEffects.onlyI>0?Array(5).fill('I'):this.queue.slice(0,5) }; }
+  snapshot() { return { buddyEffects: {...this.buddyEffects}, mode: this.mode, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Number.isFinite(b.ttl)?Math.ceil(b.ttl):null})), nextPieces: this.queue.slice(0,5) }; }
 }

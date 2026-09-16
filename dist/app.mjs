@@ -1,9 +1,9 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260916';
-import { Game, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, cells } from './engine.mjs?v=20260916';
-import { ArcadeAudio } from './audio.mjs?v=20260916';
-import { BUDDY_POWERS } from './engine.mjs?v=20260916';
-import { Fireworks } from './fireworks.mjs?v=20260916';
-import { drawPowerBlock, drawCharge, PowerEffects } from './power-fx.mjs?v=20260916';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260916-2';
+import { Game, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260916-2';
+import { ArcadeAudio } from './audio.mjs?v=20260916-2';
+import { BUDDY_POWERS } from './engine.mjs?v=20260916-2';
+import { Fireworks } from './fireworks.mjs?v=20260916-2';
+import { drawPowerBlock, drawCharge, PowerEffects } from './power-fx.mjs?v=20260916-2';
 
 const $ = id => document.getElementById(id);
 const game = new Game();
@@ -23,7 +23,7 @@ const powerEffects = new PowerEffects();
 let powerVisualTime=0, previewClock=0;
 let allClearRemaining = 0;
 let held = {}, touchGesture = null, calloutTimeout, impactTimeout, cheerTimeout, pickupTimeout, blastTimeout;
-let flyers = [], explosions = [], buddyIndex = 0, latestPiece = null;
+let flyers = [], falls = [], explosions = [], buddyIndex = 0, latestPiece = null;
 const mascotImage = new Image(); mascotImage.src = new URL("./assets/mascots.png", import.meta.url).href;
 const newMascotImage = new Image(); newMascotImage.src = new URL('./assets/power-mascots.png',import.meta.url).href;
 const mascotCrops=[[0,135,483,500],[472,60,380,575],[858,87,458,554],[1315,215,376,418],[1693,177,473,455]];
@@ -48,14 +48,47 @@ function drawStar(context, x, y, size, color, rotation = 0) {
   for(let i=0;i<10;i++){const radius=i%2?size*.43:size, angle=-Math.PI/2+i*Math.PI/5;const px=Math.cos(angle)*radius,py=Math.sin(angle)*radius;if(i===0)context.moveTo(px,py);else context.lineTo(px,py);}
   context.closePath();context.fillStyle=color;context.fill();context.restore();
 }
+function jellyFace(c, eyeY, gap, r) {
+  for(const dir of [-1,1]){
+    c.fillStyle='#ff8fb070';c.beginPath();c.ellipse(dir*gap*1.6,eyeY+r*1.5,r*.9,r*.55,0,0,Math.PI*2);c.fill();
+    c.fillStyle='#1d1630';c.beginPath();c.ellipse(dir*gap,eyeY,r,r*1.12,0,0,Math.PI*2);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(dir*gap-r*.32,eyeY-r*.42,r*.36,0,Math.PI*2);c.fill();c.beginPath();c.arc(dir*gap+r*.35,eyeY+r*.38,r*.15,0,Math.PI*2);c.fill();
+  }
+  c.fillStyle='#7c2442';c.beginPath();c.moveTo(-r*.8,eyeY+r*.9);c.quadraticCurveTo(0,eyeY+r*2.9,r*.8,eyeY+r*.9);c.closePath();c.fill();
+  c.fillStyle='#ff8da6';c.beginPath();c.ellipse(0,eyeY+r*1.75,r*.42,r*.28,0,0,Math.PI*2);c.fill();
+}
+// Polvi and Nuvi are drawn in code, in the same glossy jelly style as the sprite sheets.
+function drawCodeBuddy(c, index, x, y, size) {
+  c.save();c.translate(x,y);c.scale(size/100,size/100);c.lineCap='round';
+  if(index===8){
+    const tentacle=c.createLinearGradient(0,10,0,48);tentacle.addColorStop(0,'#6b7cf5');tentacle.addColorStop(1,'#4453c9');
+    c.strokeStyle=tentacle;c.lineWidth=11;
+    for(const [sx,cx,ex] of [[-26,-44,-40],[-15,-26,-24],[-5,-8,-8],[5,8,8],[15,26,24],[26,44,40]]){c.beginPath();c.moveTo(sx,14);c.quadraticCurveTo(cx,34,ex,44);c.stroke();}
+    c.fillStyle='#c9d0ff99';for(const [sx,ex] of [[-26,-40],[-15,-24],[-5,-8],[5,8],[15,24],[26,40]]){c.beginPath();c.arc((sx+ex*2)/3,37,2.2,0,Math.PI*2);c.fill();}
+    const head=c.createRadialGradient(-12,-26,4,0,-6,44);head.addColorStop(0,'#b7c3ff');head.addColorStop(.55,'#7384fb');head.addColorStop(1,'#4b59d6');
+    c.fillStyle=head;c.beginPath();c.ellipse(0,-8,37,34,0,0,Math.PI*2);c.fill();
+    c.fillStyle='#ffffff8c';c.beginPath();c.ellipse(-15,-30,11,5.5,-.5,0,Math.PI*2);c.fill();
+    jellyFace(c,-4,14,7.5);
+  } else {
+    c.fillStyle='#85e8fa';for(const dx of [-22,0,22]){const dy=dx?38:44;c.beginPath();c.moveTo(dx,dy-9);c.quadraticCurveTo(dx+6,dy,dx,dy+4);c.quadraticCurveTo(dx-6,dy,dx,dy-9);c.fill();}
+    const body=c.createRadialGradient(-14,-22,4,0,0,50);body.addColorStop(0,'#ffffff');body.addColorStop(.6,'#e4e8ff');body.addColorStop(1,'#aeb8f0');
+    c.fillStyle=body;c.beginPath();
+    for(const [cx,cy,r] of [[-30,8,19],[30,8,19],[-14,-12,24],[14,-16,22],[0,8,28]]){c.moveTo(cx+r,cy);c.arc(cx,cy,r,0,Math.PI*2);}
+    c.fill();
+    c.fillStyle='#ffffffb0';c.beginPath();c.ellipse(-18,-26,9,4.5,-.5,0,Math.PI*2);c.fill();
+    jellyFace(c,4,14,7);
+  }
+  c.restore();
+}
 function drawBuddy(context, index, x, y, size) {
+  if(index>=8){drawCodeBuddy(context,index,x,y,size);return;}
   const sheet=index<3?mascotImage:newMascotImage, slot=index<3?index:index-3, count=index<3?3:5;
   if(sheet.complete&&sheet.naturalWidth){
     const tile=sheet.naturalWidth/count;
     const [sx,sy,sw,sh]=index<3?[slot*tile,0,tile,sheet.naturalHeight]:mascotCrops[slot];
     const scale=size/Math.max(sw,sh),w=sw*scale,h=sh*scale;
     context.drawImage(sheet,sx,sy,sw,sh,x-w/2,y-h/2,w,h);
-  } else {context.save();context.font=`${size*.62}px system-ui`;context.textAlign='center';context.textBaseline='middle';context.fillText(['🐱','🦎','🐥','🦇','🐰','🐉','🦔','🐸'][index],x,y);context.restore();}
+  } else {context.save();context.font=`${size*.62}px system-ui`;context.textAlign='center';context.textBaseline='middle';context.fillText(['🐱','🦎','🐥','🦇','🐰','🐉','🦔','🐸','🐙','☁️'][index],x,y);context.restore();}
 }
 function buddyCheer(message, index = buddyIndex) {
   buddyIndex=index;
@@ -82,6 +115,12 @@ function bonusCelebration(event) {
 function block(context, x, y, size, type, alpha = 1, ghost = false, charged = true) {
   const color = COLORS[type] || type;
   context.save(); context.globalAlpha = alpha;
+  if(BUDDY_TYPES.includes(type)) {
+    context.fillStyle=ghost?'#f49ed80c':'#f49ed838';context.strokeStyle=ghost?'#f49ed877':'#f49ed8aa';context.lineWidth=1.5;
+    context.beginPath();context.arc(x+size/2,y+size/2,size*.46,0,Math.PI*2);context.fill();context.stroke();
+    if(!ghost)drawBuddy(context,BUDDY_TYPES.indexOf(type),x+size/2,y+size/2,size*1.2);
+    context.restore();return;
+  }
   if(charged && POWER_TYPES.includes(type)) {
     drawPowerBlock(context,x,y,size,type,powerVisualTime,prefs.effects&&!reducedMotion.matches,ghost);
     context.restore();return;
@@ -110,7 +149,7 @@ function block(context, x, y, size, type, alpha = 1, ghost = false, charged = tr
 }
 function mini(context, type, centerX, centerY, size, alpha = 1) {
   if (!type) return;
-  if(type==='BOMB'){block(context,centerX-size*.8,centerY-size*.8,size*1.6,type,alpha);return;}
+  if(type==='BOMB'||BUDDY_TYPES.includes(type)){block(context,centerX-size*.8,centerY-size*.8,size*1.6,type,alpha);return;}
   const matrix = SHAPES[type]; const parts = [];
   matrix.forEach((row,y) => row.forEach((v,x) => { if(v) parts.push({x,y}); }));
   const minX = Math.min(...parts.map(p=>p.x)), maxX = Math.max(...parts.map(p=>p.x));
@@ -139,6 +178,7 @@ function render(dt) {
     [[4,15],[3,16],[4,16],[5,16]].forEach(([x,y])=>block(ctx,x*30,y*30,30,'T',.6,true));
   } else {
     game.board.forEach((row,y)=>row.forEach((type,x)=>{ if(type)block(ctx,x*30,y*30,30,type); }));
+    if(prefs.effects){falls=falls.filter(f=>f.life>0);falls.forEach(f=>{f.life-=dt;const p=1-Math.max(0,f.life)/f.max,e=p*p;block(ctx,f.x*30,(f.from+(f.to-f.from)*e)*30,30,f.type,.55*(1-p));});}
     if(game.state !== 'over') {
       const powered=POWER_TYPES.includes(game.active.type);
       if(powered && prefs.ghost) {
@@ -187,7 +227,7 @@ function renderPieces() {
   $('empty-hold').style.display=game.hold?'none':'flex';
   setLabel($('hold-canvas'),game.hold?`Peça ${PIECE_NAMES[game.hold]} na reserva`:'Reserva vazia');
   nextCtx.clearRect(0,0,100,335);
-  const next=game.buddyEffects.onlyI>0?Array(5).fill('I'):game.queue.slice(0,5);
+  const next=game.queue.slice(0,5);
   next.forEach((type,i)=>{mini(nextCtx,type,50,30+i*66,19,i===0?1:.68);if(i<4){nextCtx.strokeStyle='#292c32';nextCtx.beginPath();nextCtx.moveTo(20,63+i*66);nextCtx.lineTo(80,63+i*66);nextCtx.stroke();}});
   setLabel($('next-canvas'),`Próximas peças: ${next.map(type=>PIECE_NAMES[type]).join(', ')}`);
 }
@@ -277,11 +317,12 @@ function processEvents() {
     if(event.type==='power')powerCelebration(event);
     if(event.type==='bonus')bonusCelebration(event);
     if(event.type==='buddy-power'){
-      callout(BUDDIES[event.buddy]+'!',event.label+' · '+event.duration/1000+'s');
-      buddyCheer(event.label+'!',event.buddy);announce(BUDDIES[event.buddy]+': '+event.label+' por '+event.duration/1000+' segundos.');
+      callout(BUDDIES[event.buddy]+'!',event.duration?event.label+' · '+event.duration/1000+'s':event.label);
+      buddyCheer(event.label+'!',event.buddy);announce(event.duration?BUDDIES[event.buddy]+': '+event.label+' por '+event.duration/1000+' segundos.':BUDDIES[event.buddy]+' · '+event.label);
     }
+    if(event.type==='gravity'){sound('gravity');if(prefs.effects)falls.push(...event.moves.map(m=>({...m,life:260,max:260})));}
     if(event.type==='drill'&&event.destroyed.length){burst([...new Set(event.destroyed.map(c=>c.y))],'#ff987a');sound('bomb');}
-    if(event.type==='bonus-spawn'&&event.bonus.kind==='buddy')buddyCheer('Me resgata? Encaixe aqui!',event.bonus.buddy);
+    if(event.type==='bonus-spawn'&&event.bonus.kind==='buddy'){buddyCheer(event.bonus.dropped?'Cheguei! Me pega depois!':'Me resgata? Encaixe aqui!',event.bonus.buddy);if(event.bonus.dropped)sound('buddy');}
     if(event.type==='clear'){
       buddyCheer(event.combo>0?'Isso! Mais um combo!':'Que encaixe lindo!');
       burst(event.rows,event.color,event.count>=4);sound('clear',event.count);
@@ -328,8 +369,6 @@ function syncUI() {
   $('fireworks').classList.toggle('upside-down',flipped);
   const effectText=Object.entries(BUDDY_POWERS).filter(([,p])=>game.buddyEffects[p.key]>0).map(([i,p])=>`${BUDDIES[i]} · ${p.label} · ${Math.ceil(game.buddyEffects[p.key]/1000)}s`).join('  |  ');
   text('buddy-effects',effectText);$('buddy-effects').hidden=!effectText||game.state==='over';
-  const onlyI=game.buddyEffects.onlyI>0;
-  if(syncUI.onlyI!==onlyI){syncUI.onlyI=onlyI;renderPieces();}
   text('score',String(game.score).padStart(6,'0'));text('level',String(game.level).padStart(2,'0'));text('lines',String(game.lines).padStart(2,'0'));
   const config=MODES[game.mode], isRush=isRushMode(game.mode), duration=config.duration, remaining=duration?Math.max(0,duration-game.elapsed):0;
   text('timer',formatTime(duration?remaining:game.elapsed));text('timer-label',duration?'Tempo restante':'Tempo de jogo');
@@ -371,7 +410,7 @@ function syncUI() {
   $('loot-bar').hidden=classic;
   const special=SPECIAL_TYPES.includes(game.active.type);
   const powered=POWER_TYPES.includes(game.active.type), power=POWERS[game.active.type];
-  text('piece-name',powered?power.symbol+' '+PIECE_NAMES[game.active.type]:game.active.type==='BOMB'?'Bomba 9 × 9. Solte!':special?PIECE_NAMES[game.active.type]+' surpresa':'Encaixe sobre os bônus!');
+  text('piece-name',powered?power.symbol+' '+PIECE_NAMES[game.active.type]:game.active.type==='BOMB'?'Bomba 9 × 9. Solte!':BUDDY_TYPES.includes(game.active.type)?PIECE_NAMES[game.active.type]+' cai e espera o resgate!':special?PIECE_NAMES[game.active.type]+' surpresa':'Encaixe sobre os bônus!');
   const showPower=!classic&&game.state!=='over'&&powered;
   $('piece-power').hidden=!showPower;
   $('piece-power').style.setProperty('--power-color',powered?COLORS[game.active.type]:COLORS.DIAG);

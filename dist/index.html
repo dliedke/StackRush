@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=20260916">
-  <script type="module" src="./app.mjs?v=20260916"></script>
+  <link rel="stylesheet" href="./style.css?v=20260916-2">
+  <script type="module" src="./app.mjs?v=20260916-2"></script>
 </head>
 <body>
 <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -124,13 +124,15 @@
 <dialog id="help-dialog" class="modal"><div class="modal-heading"><div><span class="eyebrow">APRENDA O BÁSICO</span><h2>Encontre o encaixe.</h2></div><button class="icon-button" data-close aria-label="Fechar instruções"><svg class="icon"><use href="#i-close"/></svg></button></div><p>Complete fileiras horizontais para limpar o tabuleiro. Se as peças chegarem ao topo, a partida acaba.</p><div class="help-grid"><div><h3>Movimento</h3><dl class="key-list"><div><dt>Mover</dt><dd><kbd>←</kbd><kbd>→</kbd></dd></div><div><dt>Girar à direita</dt><dd><kbd>↑</kbd><kbd>X</kbd></dd></div><div><dt>Girar à esquerda</dt><dd><kbd>Z</kbd></dd></div><div><dt>Girar 180°</dt><dd><kbd>A</kbd></dd></div><div><dt>Descer devagar</dt><dd><kbd>↓</kbd></dd></div><div><dt>Soltar de uma vez</dt><dd><kbd>ESPAÇO</kbd></dd></div></dl></div><div><h3>Sua estratégia</h3><dl class="key-list"><div><dt>Reservar peça</dt><dd><kbd>C</kbd><kbd>SHIFT</kbd></dd></div><div><dt>Pulso (Rush)</dt><dd><kbd>F</kbd></dd></div><div><dt>Pausar</dt><dd><kbd>ESC</kbd><kbd>P</kbd></dd></div><div><dt>Recomeçar</dt><dd><kbd>R</kbd></dd></div><div><dt>Iniciar / continuar</dt><dd><kbd>ENTER</kbd></dd></div></dl></div></div><div class="help-note"><svg class="icon"><use href="#i-bolt"/></svg><p><strong>O Rush tem um truque extra.</strong> Cada peça carrega energia; linhas e combos dão um bônus. Ao atingir 100%, pressione F: o pulso remove até 3 fileiras ocupadas e dobra os pontos das linhas por 8 segundos.</p></div><p class="help-small">A peça contornada mostra onde sua peça vai cair. Você pode usar a reserva uma vez por peça. No Sprint 40, as sete peças são clássicas. Rush e Zen têm quatro formatos extras, bombas, três peças com poderes e bônus surpresa. No celular, arraste para os lados, toque na peça para girar e puxe para baixo para soltar de uma vez.</p><section class="surprise-guide"><h3>Surpresas no tabuleiro</h3><canvas id="mix-canvas" width="450" height="56" aria-label="Peças especiais: Mini, Dupla, Cantinho, Ferradura, Bomba, Raio, Prisma e Diagonal"></canvas><p>Peças extras: Mini (1 bloco), Dupla (2), Cantinho (3) e Ferradura (5). Aperte A para girar 180° de uma vez.</p><p>Encaixe uma peça sobre uma estrela ou um bichinho antes que ele desapareça. Estrelas valem 200 pontos e resgates, 500, multiplicados pelo nível. Durante o Overdrive, esses bônus também valem o dobro.</p><p><strong>Bombas:</strong> solte com Espaço ou deixe encaixar. A explosão alcança até 9 × 9 casas, resgata os bichinhos na área e derruba os blocos restantes. Cada bloco destruído dá 30 pontos por nível. Uma bomba e uma peça com poder aparecem em cada grupo de dez peças no Rush e no Zen.</p><div class="charged-guide"><h3>Três peças, três superpoderes</h3>
 <p>Elas brilham em várias cores e ativam o poder ao encaixar. Podem ir para a reserva e são sorteadas sem repetir o mesmo poder em sequência.</p>
 <p>A Diagonal também se consome ao ativar: escolha a inclinação com as rotações antes de soltar.</p>
-<h3>Cinco novos amigos com poderes</h3>
+<h3>Sete amigos com poderes</h3>
 <p><strong>Nox, o morcego:</strong> vira o tabuleiro de cabeça para baixo por 10s. Os movimentos laterais acompanham a tela.</p>
 <p><strong>Turbo, o coelho:</strong> deixa a queda super-rápida por 10s!</p>
-<p><strong>Lino, o dragão:</strong> as próximas peças sorteadas são I por 10s. A reserva continua disponível.</p>
+<p><strong>Lino, o dragão:</strong> as próximas 6 peças viram 4 peças I e 2 quadradas O, prontas para encaixar. A reserva continua disponível.</p>
 <p><strong>Broca, a toupeira:</strong> ao encaixar qualquer peça, destrói todos os blocos abaixo dela nas colunas que ela ocupa, por 10s. Cada bloco vale 25 pontos por nível.</p>
 <p><strong>Sexto, o sapinho:</strong> por 15s, seis blocos em qualquer posição da mesma linha já bastam para limpá-la ao encaixar.</p>
-<p>Os oito amigos aparecem em ordem embaralhada. Poderes diferentes podem se combinar; resgatar o mesmo amigo renova seu relógio. A pausa congela os efeitos.</p>
+<p><strong>Polvi, o polvo:</strong> por 10s, os blocos soltos do tabuleiro caem e tapam os buracos a cada encaixe. Se fecharem uma linha, ela é limpa na hora.</p>
+<p><strong>Nuvi, a nuvem:</strong> as próximas 5 peças viram bichinhos. Eles caem, ficam no tabuleiro sem sumir e esperam você resgatar depois, cada um com seu poder.</p>
+<p>Os dez amigos aparecem em ordem embaralhada. Poderes diferentes podem se combinar; resgatar o mesmo amigo renova seu relógio. A pausa congela os efeitos.</p>
 <dl class="power-guide-list">
 <div><dt><span aria-hidden="true">ϟ</span> Raio</dt><dd>Apaga todos os blocos nas colunas tocadas pela peça, de cima a baixo. Na vertical, atinge uma coluna; na horizontal, três. Também coleta os bônus no caminho.</dd></div>
 <div><dt><span aria-hidden="true">◇</span> Prisma</dt><dd>Apaga a cor mais presente em todo o tabuleiro. O aviso mostra a cor-alvo e o contorno marca os blocos que vão sumir.</dd></div>

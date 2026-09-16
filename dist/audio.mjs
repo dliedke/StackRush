@@ -1,5 +1,5 @@
-import { TRACKS, arrangementAt } from './tracks.mjs?v=20260916';
-export { TRACKS } from './tracks.mjs?v=20260916';
+import { TRACKS, arrangementAt } from './tracks.mjs?v=20260916-2';
+export { TRACKS } from './tracks.mjs?v=20260916-2';
 const hz = midi => 440 * 2 ** ((midi - 69) / 12);
 
 export class ArcadeAudio {
@@ -176,6 +176,7 @@ export class ArcadeAudio {
     }
     if(kind==='start')[440,660,880].forEach((f,i)=>note(f,.12,'triangle',i*.08,.05));
     if(kind==='star')[1047,1319,1568].forEach((f,i)=>note(f,.16,'sine',i*.055,.05));
+    if(kind==='gravity')[784,622,494,392].forEach((f,i)=>note(f,.12,'triangle',i*.05,.045));
     if(kind==='buddy')[659,784,988,1319].forEach((f,i)=>note(f,.2,'triangle',i*.075,.06));
     if(kind==='VOLT'){
       this.noiseHit(now,.17,.085,'highpass',1800,false);
