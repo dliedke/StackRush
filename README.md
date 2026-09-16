@@ -1,53 +1,181 @@
-# Stack Rush
+<div align="center">
 
-Browser-based arcade game available on GitHub Pages or hosted locally by a small ASP.NET Core application.
+# ⚡ STACK RUSH ⚡
 
-## Play online
+### *Stack. Combo. Repeat. Find your **flow**.*
 
-- [Play Stack Rush](https://dliedke.github.io/StackRush/dist/)
-- [Direct game page](https://dliedke.github.io/StackRush/dist/index.html)
+**Falling blocks, lightning, exploding bombs, tiny buddies to rescue, and a banging arcade soundtrack.**
+**What could possibly go wrong?** *(Everything. The answer is everything. Also it's great.)*
 
-GitHub Pages publishes the `main` branch from `/ (root)`. The game lives in
-`dist/index.html`, so the game URL includes `/dist/`. The online version serves
-the static game files directly and does not require the ASP.NET Core host.
+[![▶ PLAY NOW](https://img.shields.io/badge/▶_PLAY_NOW-in_your_browser-d4f550?style=for-the-badge&labelColor=1a1a1f)](https://dliedke.github.io/StackRush/dist/)
 
-## Visual Studio 2026
+![Stack Rush gameplay screen](docs/screenshot.png)
 
-Install the **ASP.NET and web development** workload and the **.NET 10 SDK**.
-Open `StackRush.sln`, select the `StackRush` launch profile, and press **F5**
-(or **Ctrl+F5** without debugging). The browser opens at `http://localhost:5180`.
+</div>
 
-## Project organization
+---
 
-- `StackRush.sln` / `StackRush.csproj`: Visual Studio solution and web project.
-- `Program.cs`: HTTP host, default page, and static file configuration.
-- `Properties/launchSettings.json`: local launch and browser settings.
-- `dist/index.html`: game page.
-- `dist/style.css`: layout and styling.
-- `dist/app.mjs`: browser UI and input handling.
-- `dist/engine.mjs`: game rules and state.
-- `dist/i18n.mjs`: Portuguese and English translations.
-- `dist/audio.mjs` / `dist/tracks.mjs`: audio and music.
-- `dist/fireworks.mjs` / `dist/power-fx.mjs`: visual effects.
-- `dist/assets/`: mascot images.
-- `tests/`: Node.js tests for translations and related game behavior.
+## 🕹️ Insert coin (it's free)
 
-The existing `dist` directory is the editable web source and web root; it is
-included in builds and publishes. No JavaScript bundling or npm install is needed.
+No download. No install. No "please create an account to continue."
+Just click and start stacking:
 
-## Command line
+- 🎮 **[Play Stack Rush](https://dliedke.github.io/StackRush/dist/)**
+- 🔗 **[Direct game page](https://dliedke.github.io/StackRush/dist/index.html)**
+
+Works on desktop *and* mobile. Swipe, tap, drop, win. 📱
+
+---
+
+## 🏁 Pick your poison
+
+| Mode | Vibe | What's the deal? |
+|------|------|------------------|
+| ⚡ **Rush** | *Two minutes. All or nothing.* | Race the clock (1, 2, 5 or 10 min) with power pieces, bombs, buddies **and** the exclusive Overdrive pulse. Pure chaos, maximum points. |
+| 🎯 **Sprint 40** | *Old-school speedrun.* | The 7 classic pieces. Clear 40 lines. As fast as humanly possible. No gimmicks, no excuses. |
+| 🍃 **Zen** | *Breathe in. Stack out.* | All the power pieces, stars and buddies with no timer breathing down your neck. |
+
+---
+
+## 💥 Pieces that do *way* more than fall
+
+Rush and Zen throw a **Surprise Mix** at you. Classic blocks, plus some party guests:
+
+| Piece | What it does |
+|-------|-------------|
+| ⚡ **Lightning** | Zaps every block in the columns it touches, top to bottom. Vertical hits 1 column, horizontal hits **3**. |
+| 🌈 **Prism** | Finds the most common color on the board and makes it *vanish*. Poof. |
+| ↘️ **Diagonal** | Slices a diagonal line right across the board. Rotate to pick the angle. |
+| 💣 **Bomb** | A **9 × 9** kaboom. Rescues buddies in the blast and sends the leftovers tumbling. |
+| 🧩 **Mini, Duo, Corner, Horseshoe** | Weird little shapes for weird little gaps. |
+
+Empty the whole board and you get an **ALL CLEAR**... with **fireworks**. 🎆
+
+---
+
+## 🐾 Meet the crew
+
+**Mimi, Lumi and Pip** are cheering you on! (Mostly Mimi. Mimi is *very* supportive.)
+
+Buddies and ⭐ stars pop up on the board. Land a piece on them before they disappear:
+
+- ⭐ **Star** → 200 points × level
+- 🐱 **Buddy rescue** → 500 points × level
+
+Some buddies bring... *side effects*. Rescue them and hang on tight:
+
+| Buddy | Special talent |
+|-------|----------------|
+| 🙃 **Nox** | Flips your world **upside down** for 10s |
+| 🏎️ **Turbo** | **Turbo drop!** Pieces fall faster for 10s |
+| 📏 **Lino** | **Only I pieces** for 10s (you're welcome) |
+| 🔩 **Broca** | **Drill mode:** every piece bores straight to the bottom for 10s |
+| 6️⃣ **Sexto** | Lines clear with just **6 blocks** for 15s |
+
+---
+
+## 🔋 OVERDRIVE (Rush only)
+
+Place pieces and clear lines to charge your **pulse**. When it's full, smash **`F`** and:
+
+> 🔥 **Clears 3 rows** · 💰 **Double points for 8 seconds**
+
+Time it with a bonus and watch your score go *brrrrr*.
+
+---
+
+## ⌨️ At your fingertips
+
+| Action | Keys |
+|--------|------|
+| Move | `←` `→` |
+| Rotate | `↑` or `X` |
+| Rotate 180° | `A` |
+| Soft drop | `↓` |
+| Hard drop | `SPACE` |
+| Hold | `C` or `SHIFT` |
+| Activate pulse | `F` |
+| Pause | `ESC` |
+
+📱 **On mobile:** drag sideways to move, tap to rotate, pull down a bit to soft drop, pull down far to **SLAM** it.
+
+---
+
+## 🎵 Now playing
+
+Three original arcade bangers: **Neon Drive**, **Disco Cometa** and **Star Runner**.
+Hit shuffle, crank it up, get in the zone. 🎧
+
+🌎 Speaks **English** and **Português**, picked automatically from your browser.
+
+---
+
+## 🛠️ For the builders
+
+Want to run it locally, hack on it, or just peek under the hood? Here's how.
+
+### Visual Studio 2026
+
+1. Install the **ASP.NET and web development** workload and the **.NET 10 SDK**.
+2. Open `StackRush.sln` and pick the `StackRush` launch profile.
+3. Hit **F5** (or **Ctrl+F5** without debugging).
+4. Your browser opens at `http://localhost:5180`. Go stack something.
+
+### Command line
 
 ```powershell
-dotnet build StackRush.sln -c Release
-dotnet run --project StackRush.csproj
-node --test tests/*.test.mjs
-dotnet publish StackRush.csproj -c Release
+dotnet build StackRush.sln -c Release         # build it
+dotnet run --project StackRush.csproj         # run it
+node --test tests/*.test.mjs                  # test it (or: npm test)
+dotnet publish StackRush.csproj -c Release    # ship it
 ```
 
-Node.js is needed only for tests (`npm test` runs the same suite). These are
-Node.js tests, so run them in the terminal rather than .NET Test Explorer.
-To run published output, change into `bin/Release/net10.0/publish` and run
+To run the published output, go to `bin/Release/net10.0/publish` and run
 `dotnet StackRush.dll --urls http://localhost:5180`.
+
+> 💡 Node.js is only needed for the tests. They're Node tests, so run them in the terminal, not the .NET Test Explorer.
+
+### 🗺️ What's where
+
+```
+StackRush/
+├── 🎮 dist/                  ← the actual game (web source AND web root)
+│   ├── index.html            ← the stage
+│   ├── style.css             ← the glow-up
+│   ├── app.mjs               ← UI and input handling
+│   ├── engine.mjs            ← game rules and state (the brain 🧠)
+│   ├── i18n.mjs              ← English and Portuguese
+│   ├── audio.mjs / tracks.mjs       ← bleeps, bloops and bangers
+│   ├── fireworks.mjs / power-fx.mjs ← the shiny stuff ✨
+│   └── assets/               ← mascot images (hi Mimi 👋)
+├── 🧪 tests/                 ← Node.js tests
+├── 🖼️ docs/                  ← README images
+├── Program.cs                ← tiny ASP.NET Core host
+├── Properties/launchSettings.json
+├── StackRush.sln / StackRush.csproj
+└── package.json
+```
+
+No bundler. No `npm install`. No build step for the game. `dist/` *is* the source.
+It's included in .NET builds and publishes as-is.
+
+### 🌐 GitHub Pages
+
+GitHub Pages publishes the `main` branch from `/ (root)`. The game lives in
+`dist/index.html`, so the URL includes `/dist/`. The online version serves the
+static files directly and doesn't need the ASP.NET Core host.
 
 Static file hosting follows the
 [ASP.NET Core documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-10.0).
+
+---
+
+<div align="center">
+
+### 🏆 Think you can beat your best score?
+
+**[Prove it. ▶](https://dliedke.github.io/StackRush/dist/)**
+
+*Made with ☕, 🧱 and way too many "just one more game" moments.*
+
+</div>
