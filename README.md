@@ -1,6 +1,15 @@
 # Stack Rush
 
-Browser-based arcade game hosted by a small ASP.NET Core application.
+Browser-based arcade game available on GitHub Pages or hosted locally by a small ASP.NET Core application.
+
+## Play online
+
+- [Play Stack Rush](https://dliedke.github.io/StackRush/dist/)
+- [Direct game page](https://dliedke.github.io/StackRush/dist/index.html)
+
+GitHub Pages publishes the `main` branch from `/ (root)`. The game lives in
+`dist/index.html`, so the game URL includes `/dist/`. The online version serves
+the static game files directly and does not require the ASP.NET Core host.
 
 ## Visual Studio 2026
 
