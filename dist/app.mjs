@@ -1,9 +1,9 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260917-1';
-import { Game, COLS, ROWS, MIN_BOARD, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260917-1';
-import { ArcadeAudio } from './audio.mjs?v=20260917-1';
-import { BUDDY_POWERS } from './engine.mjs?v=20260917-1';
-import { Fireworks } from './fireworks.mjs?v=20260917-1';
-import { drawPowerBlock, drawCharge, PowerEffects } from './power-fx.mjs?v=20260917-1';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260917-3';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260917-3';
+import { ArcadeAudio } from './audio.mjs?v=20260917-3';
+import { BUDDY_POWERS } from './engine.mjs?v=20260917-3';
+import { Fireworks } from './fireworks.mjs?v=20260917-3';
+import { drawPowerBlock, drawCharge, PowerEffects } from './power-fx.mjs?v=20260917-3';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
@@ -16,14 +16,14 @@ const isRushMode = mode => Boolean(MODES[mode]?.rush);
 let selectedRushMode = prefs.rushMode;
 // Smallest readable cell, in CSS pixels: the board can grow until its cells reach this size.
 const MIN_CELL = 12;
-function boardLimits() { const rect = $('board').getBoundingClientRect(); return { cols: Math.max(MIN_BOARD, Math.floor((rect.width || 300) / MIN_CELL)), rows: Math.max(MIN_BOARD, Math.floor((rect.height || 600) / MIN_CELL)) }; }
+function boardLimits() { const rect = $('board').getBoundingClientRect(); return { cols: Math.max(MIN_BOARD, Math.floor((rect.width || 300) / MIN_CELL)), rows: Math.max(MIN_BOARD, Math.floor((rect.height || 600) / MIN_CELL) - BUFFER) }; }
 const limits = boardLimits(); prefs.cols = Math.max(MIN_BOARD, Math.min(limits.cols, prefs.cols)); prefs.rows = Math.max(MIN_BOARD, Math.min(limits.rows, prefs.rows));
 const game = new Game(prefs.mode, Math.random, prefs.cols, prefs.rows);
 const defaultBoard = () => game.cols === COLS && game.rows === ROWS;
 const boardTag = () => defaultBoard() ? '' : ` · ${game.cols}×${game.rows}`;
 const recordKey = mode => defaultBoard() ? mode : `${mode}@${game.cols}x${game.rows}`;
-// The frame keeps its shape; other board sizes are scaled to fit and centered inside it.
-function boardView() { const W = game.cols * 30, H = game.rows * 30, scale = Math.min(300 / W, 600 / H); return { W, H, scale, ox: (300 - W * scale) / 2, oy: (600 - H * scale) / 2 }; }
+// The frame keeps its shape; the board plus its hidden rows on top are scaled to fit and centered inside it.
+function boardView() { const W = game.cols * 30, H = game.rows * 30, top = BUFFER * 30, scale = Math.min(300 / W, 600 / (H + top)); return { W, H, scale, ox: (300 - W * scale) / 2, oy: (600 - (H + top) * scale) / 2 + top * scale }; }
 let particles = [], flashes = [], dropTrails = [], lastFrame = 0, uiClock = 0, endReason = '', endWon = false, newRecord = false, challengeAnnounced = false;
 const audio = new ArcadeAudio();
 const fireworks = new Fireworks();
@@ -47,7 +47,7 @@ const nextCtx = configureCanvas('next-canvas', 100, 335);
 const mixCtx = configureCanvas('mix-canvas', 450, 56);
 const text = (id, value) => setText($(id), value);
 const formatNumber = n => Math.floor(n).toLocaleString(getLocale());
-const formatScore = n => String(Math.floor(n)).padStart(6,'0').replace(/\B(?=(\d{3})+$)/g, (1000).toLocaleString(getLocale()).charAt(1));
+const formatScore = n => String(Math.floor(n)).replace(/\B(?=(\d{3})+$)/g, (1000).toLocaleString(getLocale()).charAt(1));
 const formatTime = ms => { const total = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(total / 60).toString().padStart(2,'0')}:${(total % 60).toString().padStart(2,'0')}`; };
 const preciseTime = ms => `${formatTime(Math.floor(ms / 1000) * 1000)}.${Math.floor((ms % 1000) / 10).toString().padStart(2,'0')}`;
 
@@ -176,10 +176,13 @@ const demo = [
 function render(dt) {
   if(!document.hidden && (game.state==='playing'||game.state==='ready'))powerVisualTime+=dt;
   const {W,H,scale,ox,oy}=boardView();
-  ctx.clearRect(0,0,300,600); if(ox>1||oy>1){ctx.strokeStyle='#2c3036';ctx.lineWidth=1;ctx.strokeRect(ox-.5,oy-.5,W*scale+1,H*scale+1);} ctx.save(); ctx.translate(ox,oy); ctx.scale(scale,scale); ctx.fillStyle = '#0f1114'; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle = '#22272d77'; ctx.lineWidth = .6; ctx.beginPath();
-  for(let x=0;x<=game.cols;x++){ctx.moveTo(x*30,0);ctx.lineTo(x*30,H);}
-  for(let y=0;y<=game.rows;y++){ctx.moveTo(0,y*30);ctx.lineTo(W,y*30);} ctx.stroke();
+  ctx.clearRect(0,0,300,600); ctx.save(); ctx.translate(ox,oy); ctx.scale(scale,scale); ctx.fillStyle = '#16191e'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = '#2a2f37'; ctx.lineWidth = 1/scale; ctx.beginPath();
+  for(let x=1;x<game.cols;x++){ctx.moveTo(x*30,0);ctx.lineTo(x*30,H);}
+  for(let y=1;y<game.rows;y++){ctx.moveTo(0,y*30);ctx.lineTo(W,y*30);} ctx.stroke();
+  const toppedOut=game.state!=='ready'&&game.hidden.some(row=>row.some(Boolean));
+  if(toppedOut){ctx.fillStyle='#ff5d6c14';ctx.fillRect(0,-BUFFER*30,W,BUFFER*30);}
+  ctx.strokeStyle=toppedOut?'#ff5d6c99':'#454b55';ctx.lineWidth=2/scale;ctx.strokeRect(0,0,W,H);
   if(game.mode!=='sprint'){
     for(let i=0,n=Math.ceil(game.cols*game.rows*13/200);i<n;i++){ctx.globalAlpha=prefs.effects?.08+(.05*Math.sin(game.elapsed/800+i)):.1;drawStar(ctx,(i*71+23)%W,(i*137+25)%Math.max(30,H-70),2,'#c8b3ff');}ctx.globalAlpha=1;
   }
@@ -189,7 +192,7 @@ function render(dt) {
     mini(ctx,game.mode==='sprint'?'T':'U',W/2,Math.min(111,H*.3),30,.8);
     [[4,15],[3,16],[4,16],[5,16]].filter(fits).forEach(([x,y])=>block(ctx,x*30,(y+lift)*30,30,'T',.6,true));
   } else {
-    game.board.forEach((row,y)=>row.forEach((type,x)=>{ if(type)block(ctx,x*30,y*30,30,type); }));
+    game.stack().forEach((row,i)=>row.forEach((type,x)=>{ if(type)block(ctx,x*30,(i-BUFFER)*30,30,type); }));
     if(prefs.effects){falls=falls.filter(f=>f.life>0);falls.forEach(f=>{f.life-=dt;const p=1-Math.max(0,f.life)/f.max,e=p*p;block(ctx,f.x*30,(f.from+(f.to-f.from)*e)*30,30,f.type,.55*(1-p));});}
     if(game.state !== 'over') {
       const powered=POWER_TYPES.includes(game.active.type);
@@ -204,8 +207,8 @@ function render(dt) {
         const bx=Math.min(...xs)*30,by=Math.min(...ys)*30,bw=(Math.max(...xs)-Math.min(...xs)+1)*30,bh=(Math.max(...ys)-Math.min(...ys)+1)*30;
         ctx.save();ctx.fillStyle='#ff925013';ctx.fillRect(bx,by,bw,bh);ctx.strokeStyle='#ffaa6266';ctx.setLineDash([6,6]);ctx.lineWidth=1;ctx.strokeRect(bx+1,by+1,bw-2,bh-2);ctx.restore();
       }
-      if(prefs.ghost) cells(game.ghost()).forEach(({x,y})=>{if(y>=0)block(ctx,x*30,y*30,30,game.active.type,1,true);});
-      cells(game.active).forEach(({x,y})=>{if(y>=0)block(ctx,x*30,y*30,30,game.active.type);});
+      if(prefs.ghost) cells(game.ghost()).forEach(({x,y})=>block(ctx,x*30,y*30,30,game.active.type,1,true));
+      cells(game.active).forEach(({x,y})=>block(ctx,x*30,y*30,30,game.active.type));
       if(powered)drawCharge(ctx,cells(game.active),game.active.type,powerVisualTime,prefs.effects&&!reducedMotion.matches);
     }
   }
@@ -573,7 +576,7 @@ $('fullscreen-button').addEventListener('click',async()=>{
   catch{announce('A tela cheia não está disponível neste navegador.');}
 });
 if(!document.fullscreenEnabled)$('fullscreen-button').hidden=true;
-const keyActions={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'rotate',KeyX:'rotate',KeyZ:'counter',KeyA:'rotate180',ArrowDown:'down',Space:'drop',KeyC:'hold',ShiftLeft:'hold',ShiftRight:'hold',KeyS:'pulse'};
+const keyActions={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'rotate',KeyX:'rotate',KeyZ:'counter',KeyA:'rotate180',ArrowDown:'down',Space:'drop',KeyC:'hold',ShiftLeft:'hold',ShiftRight:'hold',KeyD:'pulse'};
 window.addEventListener('keydown',e=>{
   if(document.querySelector('dialog[open]')||e.ctrlKey||e.altKey||e.metaKey)return;
   if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||e.target instanceof HTMLSelectElement)return;

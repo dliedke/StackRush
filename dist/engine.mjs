@@ -1,6 +1,8 @@
 export const COLS = 10;
 export const ROWS = 20;
 export const MIN_BOARD = 4, MAX_BOARD = 100;
+// Hidden rows above the board: the stack may grow into them, like TETR.IO, before topping out.
+export const BUFFER = 2;
 const boardSize = (value, fallback) => Number.isFinite(value) ? Math.max(MIN_BOARD, Math.min(MAX_BOARD, Math.round(value))) : fallback;
 export const COLORS = { I: '#38d6ee', O: '#f6d454', T: '#ae79f7', S: '#a5db5e', Z: '#f17a9b', J: '#6e92f3', L: '#f5a35b', DOT: '#fff5ad', DUO: '#75f4d3', CORNER: '#ff95d5', BOMB: '#ff9b68', U: '#ffbc72', VOLT: '#ffe27c', PRISM: '#ff8bd1', DIAG: '#85e8fa' };
 export const COLOR_NAMES = { I:'ciano', O:'amarelo', T:'roxo', S:'verde', Z:'rosa', J:'azul', L:'laranja', DOT:'creme', DUO:'menta', CORNER:'rosa-claro', U:'pêssego', DIAG:'azul-gelo' };
@@ -72,7 +74,7 @@ export class Game {
   reset(mode = this.mode, cols = this.cols, rows = this.rows) {
     if (!Object.hasOwn(MODES, mode)) throw new Error('Modo inválido.');
     this.cols = boardSize(cols, COLS); this.rows = boardSize(rows, ROWS);
-    this.mode = mode; this.state = 'ready'; this.board = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
+    this.mode = mode; this.state = 'ready'; this.board = Array.from({ length: this.rows }, () => Array(this.cols).fill(null)); this.hidden = Array.from({ length: BUFFER }, () => Array(this.cols).fill(null));
     this.queue = []; this.specialBag = []; this.bonuses = []; this.bonusSerial = 0; this.bonusSpawns = 0; this.nextBonusAt = 4; this.stars = 0; this.rescued = 0; this.bombs = 0; this.blastBlocks = 0; this.hold = null; this.canHold = true; this.score = 0; this.lines = 0; this.level = 1;
     this.elapsed = 0; this.combo = -1; this.maxCombo = 0; this.pieces = 0; this.energy = 0; this.overdrive = 0;
     this.powerBag = []; this.lastPower = null; this.powerUses = 0; this.allClears = 0;
@@ -113,9 +115,14 @@ export class Game {
     const matrix = SHAPES[type].map(row => [...row]);
     this.active = { type, matrix, x: Math.floor((this.cols - matrix.length) / 2), y: SPECIAL_TYPES.includes(type) || BUDDY_TYPES.includes(type) || type === 'O' ? 0 : -1, rotation: 0 };
     this.gravity = 0; this.lockTime = 0; this.lockResets = 0; this.lastRotate = false;
+    while (!this.valid(this.active) && this.valid({ ...this.active, y: this.active.y - 1 }, true)) this.active.y--;
     if (!this.valid(this.active)) this.finish(false, 'O tabuleiro encheu.');
   }
-  valid(piece) { return cells(piece).every(({x,y}) => x >= 0 && x < this.cols && y < this.rows && (y < 0 || !this.board[y][x])); }
+  valid(piece, bounds = false) { return cells(piece).every(({x,y}) => x >= 0 && x < this.cols && y >= -BUFFER && y < this.rows && (bounds || !this.at(x,y))); }
+  at(x, y) { return (y < 0 ? this.hidden[y + BUFFER] : this.board[y])?.[x] ?? null; }
+  put(x, y, type) { (y < 0 ? this.hidden[y + BUFFER] : this.board[y])[x] = type; }
+  stack() { return [...this.hidden, ...this.board]; }
+  setStack(rows) { while (rows.length < this.rows + BUFFER) rows.unshift(Array(this.cols).fill(null)); this.hidden = rows.slice(0, BUFFER); this.board = rows.slice(BUFFER); }
   start() { if (this.state !== 'ready') return false; this.state = 'playing'; this.events.push({ type: 'start' }); if (this.mode !== 'sprint') this.spawnBonus(true); return true; }
   pause() { if (this.state === 'playing') { this.state = 'paused'; return true; } return false; }
   resume() { if (this.state === 'paused') { this.state = 'playing'; return true; } return false; }
@@ -157,7 +164,6 @@ export class Game {
   }
   lock() {
     const occupied = cells(this.active);
-    if (occupied.some(c => c.y < 0)) { this.finish(false, 'O tabuleiro encheu.'); return; }
     let destroyed = 0;
     const buddyDrop = BUDDY_TYPES.includes(this.active.type);
     if (!buddyDrop) this.collectBonuses(occupied);
@@ -168,8 +174,8 @@ export class Game {
           for(let y=top;y<this.rows;y++)area.push({x,y});
         }
         this.collectBonuses(area);
-        const removed = area.filter(({x,y})=>this.board[y][x]).map(c=>({...c,type:this.board[c.y][c.x]}));
-        for(const {x,y} of removed)this.board[y][x]=null;
+        const removed = area.filter(({x,y})=>this.at(x,y)).map(c=>({...c,type:this.at(c.x,c.y)}));
+        for(const {x,y} of removed)this.put(x,y,null);
         destroyed=removed.length;
         const score=destroyed*25*this.level*(this.overdrive>0?2:1);this.score+=score;
         this.events.push({type:'drill',destroyed:removed,score});
@@ -177,11 +183,11 @@ export class Game {
     if (buddyDrop) this.dropBuddy(occupied[0]);
     else if (this.active.type === 'BOMB') destroyed += this.detonateBomb(occupied[0]);
     else if (POWER_TYPES.includes(this.active.type)) destroyed += this.activatePower(occupied);
-    else occupied.forEach(({x,y}) => { this.board[y][x] = this.active.type; });
+    else occupied.forEach(({x,y}) => this.put(x, y, this.active.type));
     let tSpin = false;
     if (this.active.type === 'T' && this.lastRotate) {
       const {x,y} = this.active;
-      const filled = [[x,y],[x+2,y],[x,y+2],[x+2,y+2]].filter(([cx,cy]) => cx < 0 || cx >= this.cols || cy >= this.rows || (cy >= 0 && this.board[cy][cx])).length;
+      const filled = [[x,y],[x+2,y],[x,y+2],[x+2,y+2]].filter(([cx,cy]) => cx < 0 || cx >= this.cols || cy >= this.rows || this.at(cx,cy)).length;
       tSpin = filled >= 3;
     }
     this.pieces++; this.canHold = true;
@@ -199,7 +205,7 @@ export class Game {
   }
   clearRows(tSpin) {
     const cleared = [];
-    this.board.forEach((row, y) => { if (row.filter(Boolean).length >= (this.buddyEffects.six > 0 ? Math.min(6, this.cols) : this.cols)) cleared.push(y); });
+    this.stack().forEach((row, i) => { if (row.filter(Boolean).length >= (this.buddyEffects.six > 0 ? Math.min(6, this.cols) : this.cols)) cleared.push(i - BUFFER); });
     if (cleared.length) {
       const n = cleared.length; this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo);
       const difficult = n >= 4 || tSpin;
@@ -211,14 +217,13 @@ export class Game {
       this.backToBack = difficult;
       this.events.push({ type: 'clear', rows: cleared, count: n, score: gained, combo: this.combo, tSpin, color: COLORS[this.active.type] });
       this.shiftBonuses(cleared);
-      this.board = this.board.filter((_, y) => !cleared.includes(y));
-      while (this.board.length < this.rows) this.board.unshift(Array(this.cols).fill(null));
+      this.setStack(this.stack().filter((_, i) => !cleared.includes(i - BUFFER)));
     }
     return cleared.length;
   }
   applyGravity() {
     const moves = [];
-    for (let x = 0; x < this.cols; x++) for (let y = this.rows - 1, to = this.rows - 1; y >= 0; y--) if (this.board[y][x]) { if (y !== to) moves.push({ x, from: y, to, type: this.board[y][x] }); to--; }
+    for (let x = 0; x < this.cols; x++) for (let y = this.rows - 1, to = this.rows - 1; y >= -BUFFER; y--) if (this.at(x,y)) { if (y !== to) moves.push({ x, from: y, to, type: this.at(x,y) }); to--; }
     if (!moves.length) return false;
     this.settleBoard(); this.events.push({ type: 'gravity', moves }); return true;
   }
@@ -229,7 +234,7 @@ export class Game {
   }
   checkAllClear(didClear) {
     // Falling pieces, their ghosts and collectible bonuses are not locked blocks.
-    if (didClear && this.board.every(row => row.every(cell => !cell))) {
+    if (didClear && this.stack().every(row => row.every(cell => !cell))) {
       const score = 5000 * this.level * (this.overdrive > 0 ? 2 : 1);
       this.score += score; this.allClears++;
       this.events.push({ type: 'all-clear', score, level: this.level });
@@ -238,14 +243,14 @@ export class Game {
   powerPreview(piece = this.active) {
     if (piece.type === 'VOLT') {
       const columns = [...new Set(cells(piece).map(cell => cell.x))].filter(x => x >= 0 && x < this.cols);
-      return { columns, target: null, cells: columns.flatMap(x => Array.from({length:this.rows},(_,y)=>({x,y}))) };
+      return { columns, target: null, cells: columns.flatMap(x => Array.from({length:this.rows+BUFFER},(_,y)=>({x,y:y-BUFFER}))) };
     }
     if (piece.type === 'PRISM') {
       const counts = new Map();
-      for (const row of this.board) for (const type of row) if(type) counts.set(type,(counts.get(type)||0)+1);
+      for (const row of this.stack()) for (const type of row) if(type) counts.set(type,(counts.get(type)||0)+1);
       const target = [...counts].sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
       const targets = [];
-      if(target)this.board.forEach((row,y)=>row.forEach((type,x)=>{if(type===target)targets.push({x,y});}));
+      if(target)this.stack().forEach((row,i)=>row.forEach((type,x)=>{if(type===target)targets.push({x,y:i-BUFFER});}));
       return { columns: [], target, cells: targets };
     }
     if (piece.type === 'DIAG') {
@@ -264,7 +269,7 @@ export class Game {
     const power = this.active.type, preview = this.powerPreview(), destroyed = [];
     this.collectBonuses([...occupied,...preview.cells]);
     for(const {x,y} of preview.cells) {
-      if(this.board[y][x]) { destroyed.push({x,y,type:this.board[y][x]}); this.board[y][x]=null; }
+      if(this.at(x,y)) { destroyed.push({x,y,type:this.at(x,y)}); this.put(x,y,null); }
     }
     this.settleBoard();
     const gained = destroyed.length * 25 * this.level * (this.overdrive > 0 ? 2 : 1);
@@ -277,7 +282,7 @@ export class Game {
   blastArea(piece = this.active) {
     const x = piece.x, y = Math.min(this.rows - 1, piece.y + 2), radius = BOMB_RADIUS;
     const area = [];
-    for (let cy = Math.max(0,y-radius); cy <= Math.min(this.rows-1,y+radius); cy++) {
+    for (let cy = Math.max(-BUFFER,y-radius); cy <= Math.min(this.rows-1,y+radius); cy++) {
       for (let cx = Math.max(0,x-radius); cx <= Math.min(this.cols-1,x+radius); cx++) area.push({x:cx,y:cy});
     }
     return { x, y, radius, cells:area };
@@ -287,7 +292,7 @@ export class Game {
     this.collectBonuses(blast.cells);
     const destroyed = [];
     for (const {x,y} of blast.cells) {
-      if (this.board[y][x]) { destroyed.push({x,y,type:this.board[y][x]}); this.board[y][x] = null; }
+      if (this.at(x,y)) { destroyed.push({x,y,type:this.at(x,y)}); this.put(x,y,null); }
     }
     this.settleBoard();
     const gained = destroyed.length * 30 * this.level * (this.overdrive > 0 ? 2 : 1);
@@ -298,8 +303,8 @@ export class Game {
   }
   settleBoard() {
     for (let x=0;x<this.cols;x++) {
-      const stack = this.board.map(row=>row[x]).filter(Boolean);
-      for (let y=0;y<this.rows;y++) this.board[y][x] = y < this.rows-stack.length ? null : stack[y-(this.rows-stack.length)];
+      const all = this.stack(), n = all.length, stack = all.map(row=>row[x]).filter(Boolean);
+      for (let y=0;y<n;y++) all[y][x] = y < n-stack.length ? null : stack[y-(n-stack.length)];
     }
     const reserved = new Set();
     this.bonuses = this.bonuses.flatMap(bonus => {
@@ -360,10 +365,9 @@ export class Game {
   pulse() {
     if (this.state !== 'playing' || !MODES[this.mode].rush || this.energy < 100 || this.overdrive > 0) return false;
     const rows = [];
-    for (let y = this.rows - 1; y >= 0 && rows.length < 3; y--) if (this.board[y].some(Boolean)) rows.push(y);
+    for (let y = this.rows - 1; y >= -BUFFER && rows.length < 3; y--) if (this.stack()[y + BUFFER].some(Boolean)) rows.push(y);
     this.shiftBonuses(rows);
-    this.board = this.board.filter((_, y) => !rows.includes(y));
-    while (this.board.length < this.rows) this.board.unshift(Array(this.cols).fill(null));
+    this.setStack(this.stack().filter((_, i) => !rows.includes(i - BUFFER)));
     this.energy = 0; this.overdrive = 8000; this.score += rows.length * 150 * this.level;
     this.lockTime = 0;
     this.events.push({ type: 'pulse', rows });

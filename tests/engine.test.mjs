@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Game,BUDDY_POWERS,BUDDY_TYPES,COLS,ROWS} from '../dist/engine.mjs';
+import {Game,BUDDY_POWERS,BUDDY_TYPES,COLS,ROWS,BUFFER} from '../dist/engine.mjs';
 
 const buddyIndex = key => Number(Object.keys(BUDDY_POWERS).find(i => BUDDY_POWERS[i].key === key));
 function rescue(game, key) {
@@ -57,4 +57,22 @@ test('Nuvi turns the next 5 pieces into buddies that stay on the board',()=>{
   game.active={type:'DOT',matrix:[[1]],x:target.x,y:0,rotation:0};game.hardDrop();
   assert.equal(game.bonuses.filter(b=>b.dropped).length,4);
   assert.ok(game.rescued>=1);
+});
+
+test('the stack can grow into hidden rows above the board before topping out',()=>{
+  const game=new Game('zen');game.start();game.bonuses=[];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS-1;x++)game.board[y][x]='L';
+  game.queue.unshift('T');game.active={type:'O',matrix:[[1,1],[1,1]],x:0,y:-2,rotation:0};game.hardDrop();
+  assert.equal(game.state,'playing');assert.deepEqual([game.hidden[0][0],game.hidden[1][1]],['O','O']);
+  assert.ok(game.valid(game.active)&&game.active.y<0);
+  for(let i=0;i<20&&game.state==='playing';i++)game.hardDrop();
+  assert.equal(game.state,'over');
+});
+
+test('clearing rows pulls blocks down from the hidden rows',()=>{
+  const game=new Game('zen');game.start();game.bonuses=[];
+  for(let x=0;x<COLS-1;x++)game.board[ROWS-1][x]='L';
+  game.hidden[BUFFER-1][0]='T';
+  game.active={type:'DOT',matrix:[[1]],x:COLS-1,y:0,rotation:0};game.hardDrop();
+  assert.equal(game.lines,1);assert.equal(game.board[0][0],'T');assert.ok(game.hidden.every(row=>row.every(cell=>!cell)));
 });
