@@ -8,6 +8,19 @@ function rescue(game, key) {
   game.collectBonuses([{x:0,y:ROWS-1}]);
 }
 
+test('custom board sizes are clamped and used for spawning, clears and snapshots',()=>{
+  const small=new Game('zen',Math.random,4,4);
+  assert.equal(small.board.length,4);assert.ok(small.board.every(row=>row.length===4));
+  assert.deepEqual([new Game('zen',Math.random,1,500).cols,new Game('zen',Math.random,1,500).rows],[4,100]);
+  const game=new Game('zen',Math.random,6,8);game.start();
+  for(let x=0;x<5;x++)game.board[7][x]='L';
+  game.active={type:'DOT',matrix:[[1]],x:5,y:0,rotation:0};game.hardDrop();
+  assert.equal(game.lines,1);assert.equal(game.board.length,8);
+  assert.deepEqual([game.snapshot().cols,game.snapshot().rows],[6,8]);
+  game.reset('rush');assert.deepEqual([game.cols,game.rows],[6,8]);
+  game.reset('rush',COLS,ROWS);assert.deepEqual([game.cols,game.rows],[COLS,ROWS]);
+});
+
 test('Lino queues 4 I pieces and 2 O pieces',()=>{
   const game=new Game('zen');game.start();rescue(game,'onlyI');
   const next=game.queue.slice(0,6);

@@ -110,3 +110,8 @@
 #board{touch-action:auto}
 .play-stage.playing #board{touch-action:none}
 @media(max-width:720px){.play-stage{touch-action:auto}.play-stage.playing{touch-action:none}}
+.board-size-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}
+.board-size-heading strong{font-weight:500;font-size:15px;display:block}
+.board-size-heading small{color:var(--muted);font-size:12px;display:block;margin-top:4px}
+.board-size-reset{padding:8px 11px;font-size:12px;white-space:nowrap}
+.board-size-control input{margin:8px 0 12px}

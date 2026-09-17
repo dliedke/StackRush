@@ -75,7 +75,7 @@ Some buddies bring... *side effects*. Rescue them and hang on tight:
 
 ## 🔋 OVERDRIVE (Rush only)
 
-Place pieces and clear lines to charge your **pulse**. When it's full, smash **`F`** and:
+Place pieces and clear lines to charge your **pulse**. When it's full, smash **`S`** and:
 
 > 🔥 **Clears 3 rows** · 💰 **Double points for 8 seconds**
 
@@ -93,7 +93,7 @@ Time it with a bonus and watch your score go *brrrrr*.
 | Soft drop | `↓` |
 | Hard drop | `SPACE` |
 | Hold | `C` or `SHIFT` |
-| Activate pulse | `F` |
+| Activate pulse | `S` |
 | Pause | `ESC` |
 
 📱 **On mobile:** drag sideways to move, tap to rotate, pull down a bit to soft drop, pull down far to **SLAM** it.

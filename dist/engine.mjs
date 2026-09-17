@@ -1,5 +1,7 @@
 export const COLS = 10;
 export const ROWS = 20;
+export const MIN_BOARD = 4, MAX_BOARD = 100;
+const boardSize = (value, fallback) => Number.isFinite(value) ? Math.max(MIN_BOARD, Math.min(MAX_BOARD, Math.round(value))) : fallback;
 export const COLORS = { I: '#38d6ee', O: '#f6d454', T: '#ae79f7', S: '#a5db5e', Z: '#f17a9b', J: '#6e92f3', L: '#f5a35b', DOT: '#fff5ad', DUO: '#75f4d3', CORNER: '#ff95d5', BOMB: '#ff9b68', U: '#ffbc72', VOLT: '#ffe27c', PRISM: '#ff8bd1', DIAG: '#85e8fa' };
 export const COLOR_NAMES = { I:'ciano', O:'amarelo', T:'roxo', S:'verde', Z:'rosa', J:'azul', L:'laranja', DOT:'creme', DUO:'menta', CORNER:'rosa-claro', U:'pêssego', DIAG:'azul-gelo' };
 export const SHAPES = {
@@ -66,10 +68,11 @@ function rotateMatrix(matrix, dir) {
   return Array.from({ length: n }, (_, y) => Array.from({ length: n }, (_, x) => dir === 1 ? matrix[n - 1 - x][y] : matrix[x][n - 1 - y]));
 }
 export class Game {
-  constructor(mode = 'rush', random = Math.random) { this.random = random; this.reset(mode); }
-  reset(mode = this.mode) {
+  constructor(mode = 'rush', random = Math.random, cols = COLS, rows = ROWS) { this.random = random; this.reset(mode, cols, rows); }
+  reset(mode = this.mode, cols = this.cols, rows = this.rows) {
     if (!Object.hasOwn(MODES, mode)) throw new Error('Modo inválido.');
-    this.mode = mode; this.state = 'ready'; this.board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    this.cols = boardSize(cols, COLS); this.rows = boardSize(rows, ROWS);
+    this.mode = mode; this.state = 'ready'; this.board = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
     this.queue = []; this.specialBag = []; this.bonuses = []; this.bonusSerial = 0; this.bonusSpawns = 0; this.nextBonusAt = 4; this.stars = 0; this.rescued = 0; this.bombs = 0; this.blastBlocks = 0; this.hold = null; this.canHold = true; this.score = 0; this.lines = 0; this.level = 1;
     this.elapsed = 0; this.combo = -1; this.maxCombo = 0; this.pieces = 0; this.energy = 0; this.overdrive = 0;
     this.powerBag = []; this.lastPower = null; this.powerUses = 0; this.allClears = 0;
@@ -108,11 +111,11 @@ export class Game {
   spawn(type) {
     type ||= this.queue.shift(); this.fillQueue();
     const matrix = SHAPES[type].map(row => [...row]);
-    this.active = { type, matrix, x: Math.floor((COLS - matrix.length) / 2), y: SPECIAL_TYPES.includes(type) || BUDDY_TYPES.includes(type) || type === 'O' ? 0 : -1, rotation: 0 };
+    this.active = { type, matrix, x: Math.floor((this.cols - matrix.length) / 2), y: SPECIAL_TYPES.includes(type) || BUDDY_TYPES.includes(type) || type === 'O' ? 0 : -1, rotation: 0 };
     this.gravity = 0; this.lockTime = 0; this.lockResets = 0; this.lastRotate = false;
     if (!this.valid(this.active)) this.finish(false, 'O tabuleiro encheu.');
   }
-  valid(piece) { return cells(piece).every(({x,y}) => x >= 0 && x < COLS && y < ROWS && (y < 0 || !this.board[y][x])); }
+  valid(piece) { return cells(piece).every(({x,y}) => x >= 0 && x < this.cols && y < this.rows && (y < 0 || !this.board[y][x])); }
   start() { if (this.state !== 'ready') return false; this.state = 'playing'; this.events.push({ type: 'start' }); if (this.mode !== 'sprint') this.spawnBonus(true); return true; }
   pause() { if (this.state === 'playing') { this.state = 'paused'; return true; } return false; }
   resume() { if (this.state === 'paused') { this.state = 'playing'; return true; } return false; }
@@ -162,7 +165,7 @@ export class Game {
         const area = [];
         for (const x of new Set(occupied.map(c=>c.x))) {
           const top = Math.min(...occupied.filter(c=>c.x===x).map(c=>c.y));
-          for(let y=top;y<ROWS;y++)area.push({x,y});
+          for(let y=top;y<this.rows;y++)area.push({x,y});
         }
         this.collectBonuses(area);
         const removed = area.filter(({x,y})=>this.board[y][x]).map(c=>({...c,type:this.board[c.y][c.x]}));
@@ -178,7 +181,7 @@ export class Game {
     let tSpin = false;
     if (this.active.type === 'T' && this.lastRotate) {
       const {x,y} = this.active;
-      const filled = [[x,y],[x+2,y],[x,y+2],[x+2,y+2]].filter(([cx,cy]) => cx < 0 || cx >= COLS || cy >= ROWS || (cy >= 0 && this.board[cy][cx])).length;
+      const filled = [[x,y],[x+2,y],[x,y+2],[x+2,y+2]].filter(([cx,cy]) => cx < 0 || cx >= this.cols || cy >= this.rows || (cy >= 0 && this.board[cy][cx])).length;
       tSpin = filled >= 3;
     }
     this.pieces++; this.canHold = true;
@@ -196,7 +199,7 @@ export class Game {
   }
   clearRows(tSpin) {
     const cleared = [];
-    this.board.forEach((row, y) => { if (row.filter(Boolean).length >= (this.buddyEffects.six > 0 ? 6 : COLS)) cleared.push(y); });
+    this.board.forEach((row, y) => { if (row.filter(Boolean).length >= (this.buddyEffects.six > 0 ? Math.min(6, this.cols) : this.cols)) cleared.push(y); });
     if (cleared.length) {
       const n = cleared.length; this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo);
       const difficult = n >= 4 || tSpin;
@@ -209,13 +212,13 @@ export class Game {
       this.events.push({ type: 'clear', rows: cleared, count: n, score: gained, combo: this.combo, tSpin, color: COLORS[this.active.type] });
       this.shiftBonuses(cleared);
       this.board = this.board.filter((_, y) => !cleared.includes(y));
-      while (this.board.length < ROWS) this.board.unshift(Array(COLS).fill(null));
+      while (this.board.length < this.rows) this.board.unshift(Array(this.cols).fill(null));
     }
     return cleared.length;
   }
   applyGravity() {
     const moves = [];
-    for (let x = 0; x < COLS; x++) for (let y = ROWS - 1, to = ROWS - 1; y >= 0; y--) if (this.board[y][x]) { if (y !== to) moves.push({ x, from: y, to, type: this.board[y][x] }); to--; }
+    for (let x = 0; x < this.cols; x++) for (let y = this.rows - 1, to = this.rows - 1; y >= 0; y--) if (this.board[y][x]) { if (y !== to) moves.push({ x, from: y, to, type: this.board[y][x] }); to--; }
     if (!moves.length) return false;
     this.settleBoard(); this.events.push({ type: 'gravity', moves }); return true;
   }
@@ -234,8 +237,8 @@ export class Game {
   }
   powerPreview(piece = this.active) {
     if (piece.type === 'VOLT') {
-      const columns = [...new Set(cells(piece).map(cell => cell.x))].filter(x => x >= 0 && x < COLS);
-      return { columns, target: null, cells: columns.flatMap(x => Array.from({length:ROWS},(_,y)=>({x,y}))) };
+      const columns = [...new Set(cells(piece).map(cell => cell.x))].filter(x => x >= 0 && x < this.cols);
+      return { columns, target: null, cells: columns.flatMap(x => Array.from({length:this.rows},(_,y)=>({x,y}))) };
     }
     if (piece.type === 'PRISM') {
       const counts = new Map();
@@ -249,9 +252,9 @@ export class Game {
       const direction = piece.rotation % 2 === 0 ? 1 : -1;
       const originX = piece.x + 1, originY = piece.y + 1;
       const line = [];
-      for (let y = 0; y < ROWS; y++) {
+      for (let y = 0; y < this.rows; y++) {
         const x = Math.round(originX + (y - originY) * direction);
-        if (x >= 0 && x < COLS) line.push({ x, y });
+        if (x >= 0 && x < this.cols) line.push({ x, y });
       }
       return { columns: [], target: null, cells: line };
     }
@@ -272,10 +275,10 @@ export class Game {
     return destroyed.length;
   }
   blastArea(piece = this.active) {
-    const x = piece.x, y = Math.min(ROWS - 1, piece.y + 2), radius = BOMB_RADIUS;
+    const x = piece.x, y = Math.min(this.rows - 1, piece.y + 2), radius = BOMB_RADIUS;
     const area = [];
-    for (let cy = Math.max(0,y-radius); cy <= Math.min(ROWS-1,y+radius); cy++) {
-      for (let cx = Math.max(0,x-radius); cx <= Math.min(COLS-1,x+radius); cx++) area.push({x:cx,y:cy});
+    for (let cy = Math.max(0,y-radius); cy <= Math.min(this.rows-1,y+radius); cy++) {
+      for (let cx = Math.max(0,x-radius); cx <= Math.min(this.cols-1,x+radius); cx++) area.push({x:cx,y:cy});
     }
     return { x, y, radius, cells:area };
   }
@@ -294,14 +297,14 @@ export class Game {
     return destroyed.length;
   }
   settleBoard() {
-    for (let x=0;x<COLS;x++) {
+    for (let x=0;x<this.cols;x++) {
       const stack = this.board.map(row=>row[x]).filter(Boolean);
-      for (let y=0;y<ROWS;y++) this.board[y][x] = y < ROWS-stack.length ? null : stack[y-(ROWS-stack.length)];
+      for (let y=0;y<this.rows;y++) this.board[y][x] = y < this.rows-stack.length ? null : stack[y-(this.rows-stack.length)];
     }
     const reserved = new Set();
     this.bonuses = this.bonuses.flatMap(bonus => {
       const top = this.board.findIndex(row=>row[bonus.x]);
-      let y = top === -1 ? ROWS-1 : top-1;
+      let y = top === -1 ? this.rows-1 : top-1;
       while(y>=0 && reserved.has(`${bonus.x},${y}`))y--;
       if(y<0)return [];
       reserved.add(`${bonus.x},${y}`);return [{...bonus,y}];
@@ -310,12 +313,12 @@ export class Game {
   spawnBonus(first = false) {
     if (this.mode === 'sprint' || this.state !== 'playing' || this.bonuses.filter(b => !b.dropped).length >= 2) return false;
     let candidates = [];
-    if (first) candidates = cells(this.ghost()).filter(p => p.y >= 6 && !this.board[p.y][p.x]);
+    if (first) candidates = cells(this.ghost()).filter(p => p.y >= Math.round(this.rows * .3) && !this.board[p.y][p.x]);
     if (!candidates.length) {
-      for (let x = 0; x < COLS; x++) {
+      for (let x = 0; x < this.cols; x++) {
         const top = this.board.findIndex(row => row[x]);
-        const y = top === -1 ? ROWS - 1 : top - 1;
-        if (y >= 5 && !this.bonuses.some(b => b.x === x && b.y === y)) candidates.push({x,y});
+        const y = top === -1 ? this.rows - 1 : top - 1;
+        if (y >= Math.round(this.rows / 4) && !this.bonuses.some(b => b.x === x && b.y === y)) candidates.push({x,y});
       }
     }
     if (!candidates.length) return false;
@@ -357,10 +360,10 @@ export class Game {
   pulse() {
     if (this.state !== 'playing' || !MODES[this.mode].rush || this.energy < 100 || this.overdrive > 0) return false;
     const rows = [];
-    for (let y = ROWS - 1; y >= 0 && rows.length < 3; y--) if (this.board[y].some(Boolean)) rows.push(y);
+    for (let y = this.rows - 1; y >= 0 && rows.length < 3; y--) if (this.board[y].some(Boolean)) rows.push(y);
     this.shiftBonuses(rows);
     this.board = this.board.filter((_, y) => !rows.includes(y));
-    while (this.board.length < ROWS) this.board.unshift(Array(COLS).fill(null));
+    while (this.board.length < this.rows) this.board.unshift(Array(this.cols).fill(null));
     this.energy = 0; this.overdrive = 8000; this.score += rows.length * 150 * this.level;
     this.lockTime = 0;
     this.events.push({ type: 'pulse', rows });
@@ -382,5 +385,5 @@ export class Game {
     if (this.grounded()) { this.lockTime += dt; if (this.lockTime >= 480) this.lock(); } else this.lockTime = 0;
   }
   finish(won, reason) { this.state = 'over'; this.events.push({ type: 'finish', won, reason }); }
-  snapshot() { return { buddyEffects: {...this.buddyEffects}, mode: this.mode, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Number.isFinite(b.ttl)?Math.ceil(b.ttl):null})), nextPieces: this.queue.slice(0,5) }; }
+  snapshot() { return { buddyEffects: {...this.buddyEffects}, mode: this.mode, cols: this.cols, rows: this.rows, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Number.isFinite(b.ttl)?Math.ceil(b.ttl):null})), nextPieces: this.queue.slice(0,5) }; }
 }

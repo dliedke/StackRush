@@ -1,4 +1,4 @@
-import { COLORS } from './engine.mjs?v=20260916-2';
+import { COLORS } from './engine.mjs?v=20260917-1';
 
 const HUES = { VOLT: 45, PRISM: 305, DIAG: 185 };
 
@@ -57,7 +57,7 @@ export class PowerEffects {
   constructor(random=Math.random) { this.random=random; this.reset(); }
   reset() { this.effects=[]; }
   trigger(event) {
-    const bolts=event.columns.map(x=>Array.from({length:21},(_,i)=>({x:x*30+15+(i===0||i===20?0:(this.random()-.5)*13),y:i*30})));
+    const rows=event.rows||20,bolts=event.columns.map(x=>Array.from({length:rows+1},(_,i)=>({x:x*30+15+(i===0||i===rows?0:(this.random()-.5)*13),y:i*30})));
     this.effects.push({...event,age:0,life:1300,bolts});this.effects=this.effects.slice(-3);
   }
   update(dt) { for(const effect of this.effects)effect.age+=dt;this.effects=this.effects.filter(effect=>effect.age<effect.life); }
