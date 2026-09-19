@@ -1,10 +1,10 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260919-2';
-import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260919-2';
-import { ArcadeAudio } from './audio.mjs?v=20260919-2';
-import { BUDDY_POWERS } from './engine.mjs?v=20260919-2';
-import { Fireworks } from './fireworks.mjs?v=20260919-2';
-import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260919-2';
-import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260919-2';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260919-3';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260919-3';
+import { ArcadeAudio } from './audio.mjs?v=20260919-3';
+import { BUDDY_POWERS } from './engine.mjs?v=20260919-3';
+import { Fireworks } from './fireworks.mjs?v=20260919-3';
+import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260919-3';
+import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260919-3';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
