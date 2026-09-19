@@ -10,8 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=20260918-2">
-  <script type="module" src="./app.mjs?v=20260918-2"></script>
+  <link rel="stylesheet" href="./style.css?v=20260918-3">
+  <link rel="stylesheet" href="./journey.css?v=20260918-3">
+  <script type="module" src="./app.mjs?v=20260918-3"></script>
 </head>
 <body>
 <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -60,6 +61,11 @@
     <div class="mix-info"><span class="mix-chip"><span aria-hidden="true">✦</span><span id="mix-label">MIX SURPRESA</span></span><span id="mix-description">Raio. Prisma. Diagonal. Foguetinho!</span></div>
     <div class="music-controls"><button class="music-pill" id="music-button" aria-label="Desativar música" aria-pressed="true" title="Ativar ou desativar música"><span class="equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="music-track">Trilha aleatória</span><span id="music-state">ao jogar</span></button><button id="shuffle-music-button" class="icon-button shuffle-button" aria-label="Sortear próxima música" title="Sortear próxima música"><svg class="icon"><use href="#i-shuffle"/></svg></button></div>
   </div>
+  <section class="journey-bar" aria-label="Sua jornada">
+    <button type="button" id="missions-button" class="journey-card"><span class="journey-label"><span>MISSÕES</span><strong id="missions-count">0 / 3</strong></span><span class="journey-hint">Pequenas metas, pontos extras.</span><progress id="missions-progress" value="0" max="3" aria-label="Progresso das missões"></progress></button>
+    <button type="button" id="album-button" class="journey-card album-entry"><span class="journey-label"><span>ÁLBUM DOS AMIGOS</span><strong id="album-count">0 / 10</strong></span><span class="journey-hint" id="album-hint">Resgate para colecionar</span><span class="album-entry-link">Ver minha turma ↗</span></button>
+    <div class="journey-card journey-rival" id="record-rival"><span class="journey-label" id="rival-label">SEU PRÓXIMO RECORDE</span><strong class="rival-message" id="rival-message">Marque seu primeiro recorde!</strong><progress id="rival-progress" value="0" max="1" aria-label="Progresso para o recorde"></progress></div>
+  </section>
   <div class="arena-grid">
     <aside class="left-panel">
       <section class="score-panel panel">
@@ -93,6 +99,7 @@
             <h2 id="overlay-title">PRONTO<br>PRO <em>RUSH?</em></h2>
             <p id="overlay-description">120 segundos.<br>Faça cada linha contar.</p>
             <div class="end-stats" id="end-stats" hidden></div>
+            <div class="end-progress" id="end-progress" hidden><strong id="end-missions"></strong><span id="end-album"></span></div>
             <button class="play-button" id="play-button"><svg class="icon"><use href="#i-play"/></svg><span>Jogar agora</span><svg class="icon"><use href="#i-arrow"/></svg></button>
             <span class="enter-hint">ou pressione <kbd>ENTER</kbd></span>
           </div>
@@ -114,14 +121,28 @@
       <div id="buddy-effects" class="buddy-effects" hidden></div>
     </section>
     <aside class="right-panel">
-      <section class="challenge-panel panel"><div class="panel-label"><span>DESAFIO DA PARTIDA</span><svg class="icon"><use href="#i-target"/></svg></div><div class="companion"><span class="mascot-sprite" data-companion style="--buddy:0" role="img" aria-label="Mimi"></span><div class="buddy-bubble" id="buddy-message">Bora encaixar?</div></div><span class="buddy-name" id="buddy-name">Mimi está na torcida</span><h2 id="challenge-title">Encontre seu ritmo</h2><p id="challenge-description">Limpe 8 linhas em uma partida.<br>O flow começa aqui.</p><div class="challenge-progress-label"><span>Progresso</span><strong id="challenge-count">0 / 8</strong></div><progress id="challenge-progress" value="0" max="8" aria-label="Progresso do desafio"></progress></section>
+      <section class="challenge-panel panel"><div class="panel-label"><span>MISSÕES DA PARTIDA</span><svg class="icon"><use href="#i-target"/></svg></div><div class="companion"><span class="mascot-sprite" data-companion style="--buddy:0" role="img" aria-label="Mimi"></span><div class="buddy-bubble" id="buddy-message">Bora encaixar?</div></div><span class="buddy-name" id="buddy-name">Mimi está na torcida</span><h2>Três chances de brilhar.</h2><p>Cumpra as missões nesta partida e ganhe pontos extras.</p><div class="mission-list" id="mission-list"></div></section>
       <section class="controls-panel"><div class="panel-label"><span>NA PONTA DOS DEDOS</span><svg class="icon"><use href="#i-keyboard"/></svg></div><dl class="key-list"><div><dt>Mover</dt><dd><kbd>←</kbd><kbd>→</kbd></dd></div><div><dt>Girar</dt><dd><kbd>↑</kbd><span>ou</span><kbd>X</kbd></dd></div><div><dt>Girar 180°</dt><dd><kbd>A</kbd></dd></div><div><dt>Descer</dt><dd><kbd>↓</kbd></dd></div><div><dt>Soltar</dt><dd><kbd class="wide-key">ESPAÇO</kbd></dd></div><div><dt>Reservar</dt><dd><kbd>C</kbd><span>ou</span><kbd>SHIFT</kbd></dd></div><div><dt>Ativar pulso</dt><dd><kbd>D</kbd></dd></div></dl><button class="text-button" id="all-controls">Todos os controles <svg class="icon"><use href="#i-arrow"/></svg></button></section>
       <div class="combo-tip"><span class="combo-icon">×2</span><p><strong>Uma linha puxa a outra.</strong>Limpe linhas em peças seguidas para multiplicar seus combos.</p></div>
     </aside>
   </div>
+  <div class="journey-notice" id="journey-notice" hidden role="status"><strong id="journey-notice-title"></strong><span id="journey-notice-detail"></span></div>
   <footer class="arena-footer"><span>FEITO PARA AQUELE “SÓ MAIS UMA”.</span><div><span>16 peças. Uma turma inteira no flow.</span><span class="footer-mark">SR / MIX</span></div></footer>
 </main>
 <div class="sr-only" id="announcer" role="status" aria-live="polite"></div>
+<dialog id="missions-dialog" class="modal missions-modal" aria-labelledby="missions-title">
+  <div class="modal-heading"><div><span class="eyebrow">UM OBJETIVO A CADA PARTIDA</span><h2 id="missions-title">Três chances de brilhar.</h2></div><button class="icon-button" data-close aria-label="Fechar missões"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <p>As missões recomeçam a cada partida. A recompensa entra na pontuação assim que você completa o objetivo.</p>
+  <div class="mission-list" id="mission-dialog-list"></div><p id="mission-dialog-summary"></p>
+  <button class="play-button modal-done" data-close>Voltar para a arena <svg class="icon"><use href="#i-arrow"/></svg></button>
+</dialog>
+<dialog id="album-dialog" class="modal album-modal" aria-labelledby="album-title">
+  <div class="modal-heading"><div><span class="eyebrow">CADA RESGATE CONTA</span><h2 id="album-title">Sua turma no flow.</h2></div><button class="icon-button" data-close aria-label="Fechar álbum"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <p>Encontre os dez amigos! Resgate cada um 3 vezes para liberar a cor Aurora, 5 para a coroa e 10 para uma chuva de corações.</p>
+  <p class="album-summary" id="album-summary"></p><div class="album-grid" id="album-grid"></div>
+  <p class="help-small">Os novos visuais são equipados ao desbloquear. Você pode trocar abaixo de cada amigo. Seu álbum fica salvo neste dispositivo.</p>
+  <button class="play-button modal-done" data-close>Voltar para a arena <svg class="icon"><use href="#i-arrow"/></svg></button>
+</dialog>
 <dialog id="help-dialog" class="modal"><div class="modal-heading"><div><span class="eyebrow">APRENDA O BÁSICO</span><h2>Encontre o encaixe.</h2></div><button class="icon-button" data-close aria-label="Fechar instruções"><svg class="icon"><use href="#i-close"/></svg></button></div><p>Complete fileiras horizontais para limpar o tabuleiro. Se as peças chegarem ao topo, a partida acaba.</p><div class="help-grid"><div><h3>Movimento</h3><dl class="key-list"><div><dt>Mover</dt><dd><kbd>←</kbd><kbd>→</kbd></dd></div><div><dt>Girar à direita</dt><dd><kbd>↑</kbd><kbd>X</kbd></dd></div><div><dt>Girar à esquerda</dt><dd><kbd>Z</kbd></dd></div><div><dt>Girar 180°</dt><dd><kbd>A</kbd></dd></div><div><dt>Descer devagar</dt><dd><kbd>↓</kbd></dd></div><div><dt>Soltar de uma vez</dt><dd><kbd>ESPAÇO</kbd></dd></div></dl></div><div><h3>Sua estratégia</h3><dl class="key-list"><div><dt>Reservar peça</dt><dd><kbd>C</kbd><kbd>SHIFT</kbd></dd></div><div><dt>Pulso (Rush)</dt><dd><kbd>D</kbd></dd></div><div><dt>Pausar</dt><dd><kbd>ESC</kbd><kbd>P</kbd></dd></div><div><dt>Recomeçar</dt><dd><kbd>R</kbd></dd></div><div><dt>Iniciar / continuar</dt><dd><kbd>ENTER</kbd></dd></div></dl></div></div><div class="help-note"><svg class="icon"><use href="#i-bolt"/></svg><p><strong>O Rush tem um truque extra.</strong> Cada peça carrega energia; linhas e combos dão um bônus. Ao atingir 100%, pressione D: o pulso remove até 3 fileiras ocupadas e dobra os pontos das linhas por 8 segundos.</p></div><p class="help-small">A peça contornada mostra onde sua peça vai cair. Você pode usar a reserva uma vez por peça. No Sprint 40, as sete peças são clássicas. Rush e Zen têm quatro formatos extras, bombas, quatro peças com poderes e bônus surpresa. No celular, arraste para os lados, toque na peça para girar e puxe para baixo para soltar de uma vez.</p><section class="surprise-guide"><h3>Surpresas no tabuleiro</h3><canvas id="mix-canvas" width="450" height="56" aria-label="Peças especiais: Mini, Dupla, Cantinho, Ferradura, Bomba, Raio, Prisma, Diagonal e Foguetinho"></canvas><p>Peças extras: Mini (1 bloco), Dupla (2), Cantinho (3) e Ferradura (5). Aperte A para girar 180° de uma vez.</p><p>Encaixe uma peça sobre uma estrela ou um bichinho antes que ele desapareça. Estrelas valem 200 pontos e resgates, 500, multiplicados pelo nível. Durante o Overdrive, esses bônus também valem o dobro.</p><p><strong>Bombas:</strong> solte com Espaço ou deixe encaixar. A explosão alcança até 9 × 9 casas, resgata os bichinhos na área e derruba os blocos restantes. Cada bloco destruído dá 30 pontos por nível. Uma bomba e uma peça com poder aparecem em cada grupo de dez peças no Rush e no Zen.</p><div class="charged-guide"><h3>Quatro peças, quatro superpoderes</h3>
 <p>Elas brilham em várias cores e ativam o poder ao encaixar. Podem ir para a reserva e são sorteadas sem repetir o mesmo poder em sequência.</p>
 <p>A Diagonal também se consome ao ativar: escolha a inclinação com as rotações antes de soltar.</p>

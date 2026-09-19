@@ -1,3 +1,5 @@
+import { createMissions, advanceMissions } from './progression.mjs?v=20260918-3';
+
 export const COLS = 10;
 export const ROWS = 20;
 export const MIN_BOARD = 4, MAX_BOARD = 100;
@@ -82,6 +84,7 @@ export class Game {
     this.buddyEffects = {}; this.buddyBag = [];
     this.pieceStreak = null; this.nextStreakAt = 14 + Math.floor(this.random() * 10);
     this.birds = []; this.birdSerial = 0; this.birdsHit = 0; this.nextBirdAt = 4000;
+    this.missions = createMissions(mode); this.missionPoints = 0;
     this.gravity = 0; this.lockTime = 0; this.lockResets = 0; this.events = []; this.backToBack = false; this.lastRotate = false;
     this.fillQueue(); this.spawn(); this.events = [];
   }
@@ -210,6 +213,7 @@ export class Game {
       tSpin = filled >= 3;
     }
     this.pieces++; this.canHold = true;
+    this.checkMissions();
     let cleared = this.clearRows(tSpin);
     // Polvi: loose blocks fall into the holes, and every new full row keeps the cascade going.
     if (this.buddyEffects.gravity > 0) while (this.applyGravity()) { const more = this.clearRows(false); if (!more) break; cleared += more; }
@@ -238,7 +242,7 @@ export class Game {
       this.shiftBonuses(cleared);
       this.setStack(this.stack().filter((_, i) => !cleared.includes(i - BUFFER)));
     }
-    return cleared.length;
+    this.checkMissions();return cleared.length;
   }
   applyGravity() {
     const moves = [];
@@ -384,6 +388,14 @@ export class Game {
         this.events.push({type:'buddy-power',buddy:bonus.buddy,...power});
       }
     }
+    this.checkMissions();
+  }
+  checkMissions() {
+    if(this.state!=='playing')return;
+    for(const mission of advanceMissions(this.missions,this)){
+      this.score+=mission.reward;this.missionPoints+=mission.reward;
+      this.events.push({type:'mission',mission,score:mission.reward});
+    }
   }
   queueNext(types) { this.queue.splice(this.pieceStreak?.remaining || 0, 0, ...types); }
   spawnBird() {
@@ -403,7 +415,7 @@ export class Game {
     const score = 300 * this.level * (this.overdrive>0?2:1);
     this.score += score; this.birdsHit++;
     if (MODES[this.mode].rush) this.energy = Math.min(100,this.energy+8);
-    this.events.push({type:'bird-hit',bird:{...bird},score}); return true;
+    this.events.push({type:'bird-hit',bird:{...bird},score}); this.checkMissions();return true;
   }
   hitBirdAt(x,y) {
     if (!Number.isFinite(x)||!Number.isFinite(y)||x<0||x>=this.cols||y<0||y>=this.rows) return false;
@@ -465,5 +477,5 @@ export class Game {
     if (this.grounded()) { this.lockTime += dt; if (this.lockTime >= 480) this.lock(); } else this.lockTime = 0;
   }
   finish(won, reason) { this.state = 'over'; this.events.push({ type: 'finish', won, reason }); }
-  snapshot() { return { pieceStreak: this.pieceStreak ? {...this.pieceStreak} : null, birdsHit: this.birdsHit, birds: this.birds.map(b=>({...b})), buddyEffects: {...this.buddyEffects}, mode: this.mode, cols: this.cols, rows: this.rows, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Number.isFinite(b.ttl)?Math.ceil(b.ttl):null})), nextPieces: this.queue.slice(0,5) }; }
+  snapshot() { return { missions:this.missions.map(m=>({...m})), missionPoints:this.missionPoints, pieceStreak: this.pieceStreak ? {...this.pieceStreak} : null, birdsHit: this.birdsHit, birds: this.birds.map(b=>({...b})), buddyEffects: {...this.buddyEffects}, mode: this.mode, cols: this.cols, rows: this.rows, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Number.isFinite(b.ttl)?Math.ceil(b.ttl):null})), nextPieces: this.queue.slice(0,5) }; }
 }

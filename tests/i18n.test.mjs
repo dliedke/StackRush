@@ -15,6 +15,14 @@ test('browser language, regional variants, fallback and saved preference',()=>{
 test('localized events, nested names, powers, points and records',()=>{
   setLanguage('en');assert.equal(getLocale(),'en-US');
   const cases=[
+    ['Acerte 3 passarinhos','Hit 3 birds'],['Resgate 2 bichinhos','Rescue 2 buddies'],['Faça um combo de 3','Make a 3-piece combo'],
+    ['Mimi entrou para o álbum!','Mimi joined the album!'],['Mimi · 2 resgates para Coroa','Mimi · 2 rescues to unlock Crown'],
+    ['Cor de Mimi','Color for Mimi'],['Acessório de Lumi','Accessory for Lumi'],['Comemoração de Pip','Celebration for Pip'],
+    ['2 / 10 amigos · 15 resgates no álbum','2 / 10 friends · 15 album rescues'],
+    ['2 / 3 missões · +1,750 PONTOS','2 / 3 missions · +1,750 POINTS'],
+    ['Coroa · 3 / 5 resgates','Crown · 3 / 5 rescues'],
+    ['Faltam 500 pontos para o recorde!','500 points to your personal best!'],
+    ['Seu melhor tempo: 01:20.45','Your best time: 01:20.45'],
     ['🚀 Foguetinho','🚀 Rocket'],['FOGUETINHO!','ROCKET!'],
     ['Foguetinho! 9 blocos removidos. 225 pontos.','Rocket! 9 blocks removed. 225 points.'],
     ['Passarinho! 1,200 pontos','Bird! 1,200 points'],

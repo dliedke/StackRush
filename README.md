@@ -78,6 +78,16 @@ Some buddies bring... *side effects*. Rescue them and hang on tight:
 
 ---
 
+## 🎯 A reason for one more round
+
+- **Three missions per game:** hit 3 birds (+750 points), rescue 2 buddies (+1,000), and clear lines with 3 consecutive pieces (+1,500). Sprint swaps birds and rescues for clearing 8 lines and placing 20 pieces. Each reward is paid once per game, at its fixed value.
+- **Buddy album:** every rescue is saved on your device. Find all 10 friends, then rescue each one 3 times for an Aurora color, 5 for a crown, and 10 for a heart shower. New looks equip automatically; open the album to choose your favorites. They appear on the board and cheering buddies.
+- **Beat your best:** track the gap to your personal record, get a nudge near the target, and celebrate passing it with a fanfare and fireworks. Records stay separate by mode and board size; Sprint compares completed times.
+
+Open **Missions** or **Buddy Album** above the board at any time. The game pauses while you look. The results screen shows completed missions and the next album milestone.
+
+---
+
 ## 🔋 OVERDRIVE (Rush only)
 
 Place pieces and clear lines to charge your **pulse**. When it's full, smash **`D`** and:
@@ -148,6 +158,8 @@ StackRush/
 │   ├── style.css             ← the glow-up
 │   ├── app.mjs               ← UI and input handling
 │   ├── engine.mjs            ← game rules and state (the brain 🧠)
+│   ├── progression.mjs       ← missions, buddy album and personal-best rival
+│   ├── journey.css           ← mission cards, album and progress notices
 │   ├── i18n.mjs              ← English and Portuguese
 │   ├── audio.mjs / tracks.mjs       ← bleeps, bloops and bangers
 │   ├── fireworks.mjs / power-fx.mjs ← the shiny stuff ✨

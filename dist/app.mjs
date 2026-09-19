@@ -1,9 +1,10 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260918-2';
-import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260918-2';
-import { ArcadeAudio } from './audio.mjs?v=20260918-2';
-import { BUDDY_POWERS } from './engine.mjs?v=20260918-2';
-import { Fireworks } from './fireworks.mjs?v=20260918-2';
-import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260918-2';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260918-3';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260918-3';
+import { ArcadeAudio } from './audio.mjs?v=20260918-3';
+import { BUDDY_POWERS } from './engine.mjs?v=20260918-3';
+import { Fireworks } from './fireworks.mjs?v=20260918-3';
+import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260918-3';
+import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260918-3';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
@@ -22,9 +23,14 @@ const game = new Game(prefs.mode, Math.random, prefs.cols, prefs.rows);
 const defaultBoard = () => game.cols === COLS && game.rows === ROWS;
 const boardTag = () => defaultBoard() ? '' : ` · ${game.cols}×${game.rows}`;
 const recordKey = mode => defaultBoard() ? mode : `${mode}@${game.cols}x${game.rows}`;
+const album = new BuddyAlbum(BUDDIES,storage.get('stack-rush-album-v1',null));
+let rival = new RecordRival(game.mode,records[recordKey(game.mode)]);
+let journeyNotices = [], journeyNoticeTime = 0, recordCelebrationTime = 0, runUnlocks = 0, lastRescued = null;
+let missionSignature = '';
+const recordFireworks = new Fireworks();
 // The frame keeps its shape; the board plus its hidden rows on top are scaled to fit and centered inside it.
 function boardView() { const W = game.cols * 30, H = game.rows * 30, top = BUFFER * 30, scale = Math.min(300 / W, 600 / (H + top)); return { W, H, scale, ox: (300 - W * scale) / 2, oy: (600 - (H + top) * scale) / 2 + top * scale }; }
-let particles = [], flashes = [], dropTrails = [], lastFrame = 0, uiClock = 0, endReason = '', endWon = false, newRecord = false, challengeAnnounced = false;
+let particles = [], flashes = [], dropTrails = [], lastFrame = 0, uiClock = 0, endReason = '', endWon = false, newRecord = false;
 const audio = new ArcadeAudio();
 const fireworks = new Fireworks();
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -59,6 +65,10 @@ function drawStar(context, x, y, size, color, rotation = 0) {
   for(let i=0;i<10;i++){const radius=i%2?size*.43:size, angle=-Math.PI/2+i*Math.PI/5;const px=Math.cos(angle)*radius,py=Math.sin(angle)*radius;if(i===0)context.moveTo(px,py);else context.lineTo(px,py);}
   context.closePath();context.fillStyle=color;context.fill();context.restore();
 }
+function drawHeart(context,x,y,size,color) {
+  context.save();context.translate(x,y);context.scale(size/7,size/7);context.fillStyle=color;
+  context.beginPath();context.moveTo(0,6);context.bezierCurveTo(-13,-2,-5,-10,0,-4);context.bezierCurveTo(5,-10,13,-2,0,6);context.fill();context.restore();
+}
 function jellyFace(c, eyeY, gap, r) {
   for(const dir of [-1,1]){
     c.fillStyle='#ff8fb070';c.beginPath();c.ellipse(dir*gap*1.6,eyeY+r*1.5,r*.9,r*.55,0,0,Math.PI*2);c.fill();
@@ -91,7 +101,7 @@ function drawCodeBuddy(c, index, x, y, size) {
   }
   c.restore();
 }
-function drawBuddy(context, index, x, y, size) {
+function drawBuddyBase(context, index, x, y, size) {
   if(index>=8){drawCodeBuddy(context,index,x,y,size);return;}
   const sheet=index<3?mascotImage:newMascotImage, slot=index<3?index:index-3, count=index<3?3:5;
   if(sheet.complete&&sheet.naturalWidth){
@@ -101,12 +111,26 @@ function drawBuddy(context, index, x, y, size) {
     context.drawImage(sheet,sx,sy,sw,sh,x-w/2,y-h/2,w,h);
   } else {context.save();context.font=`${size*.62}px system-ui`;context.textAlign='center';context.textBaseline='middle';context.fillText(['🐱','🦎','🐥','🦇','🐰','🐉','🦔','🐸','🐙','☁️'][index],x,y);context.restore();}
 }
+function drawBuddy(context,index,x,y,size) {
+  const style=album.entry(index);
+  context.save();if(style?.color==='aurora')context.filter='hue-rotate(115deg) saturate(1.3)';
+  drawBuddyBase(context,index,x,y,size);context.restore();
+  if(style?.accessory==='crown'){
+    context.save();context.translate(x,y-size*.3);context.scale(size/100,size/100);
+    context.fillStyle='#ffdc74';context.strokeStyle='#fff3b8';context.lineWidth=1.5;
+    context.beginPath();context.moveTo(-18,0);context.lineTo(-22,-19);context.lineTo(-10,-12);context.lineTo(0,-25);context.lineTo(10,-12);context.lineTo(22,-19);context.lineTo(18,0);context.closePath();context.fill();context.stroke();
+    drawStar(context,0,-9,4,'#ee83c3');context.restore();
+  }
+}
+function refreshCompanions() {
+  document.querySelectorAll('[data-companion]').forEach(el=>{
+    el.classList.add('power-mascot');setLabel(el,BUDDIES[buddyIndex]);el.replaceChildren();
+    const canvas=document.createElement('canvas');canvas.width=160;canvas.height=160;canvas.setAttribute('aria-hidden','true');el.append(canvas);drawBuddy(canvas.getContext('2d'),buddyIndex,80,80,142);
+  });
+}
 function buddyCheer(message, index = buddyIndex) {
   buddyIndex=index;
-  document.querySelectorAll('[data-companion]').forEach(el=>{
-    el.classList.toggle('power-mascot',index>=3);el.style.setProperty('--buddy',String(index));setLabel(el,BUDDIES[index]);el.replaceChildren();
-    if(index>=3){const canvas=document.createElement('canvas');canvas.width=160;canvas.height=160;canvas.setAttribute('aria-hidden','true');el.append(canvas);drawBuddy(canvas.getContext('2d'),index,80,80,160);}
-  });
+  refreshCompanions();
   text('buddy-message',message);text('buddy-name',BUDDIES[index]+' está na torcida');
   document.querySelectorAll('.companion').forEach(el=>{el.classList.remove('cheering');void el.offsetWidth;el.classList.add('cheering');});
   clearTimeout(cheerTimeout);cheerTimeout=setTimeout(()=>document.querySelectorAll('.companion').forEach(el=>el.classList.remove('cheering')),1500);
@@ -118,7 +142,8 @@ function bonusCelebration(event) {
   $('pickup-notice').classList.add('visible');clearTimeout(pickupTimeout);pickupTimeout=setTimeout(()=>$('pickup-notice').classList.remove('visible'),2200);
   if(star)buddyCheer('Você brilhou!');else buddyCheer('Valeu pelo resgate!',bonus.buddy);
   if(prefs.effects){
-    for(let i=0;i<20;i++){const life=500+Math.random()*500;particles.push({x:bonus.x*30+15,y:bonus.y*30+15,vx:(Math.random()-.5)*7,vy:-Math.random()*7-2,size:3+Math.random()*4,color:star?'#ffe27c':'#ff9edd',life,max:life,star:true,rotation:Math.random()*6});}
+    const hearts=!star&&album.entry(bonus.buddy)?.celebration==='hearts';
+    for(let i=0;i<(hearts?32:20);i++){const life=500+Math.random()*500;particles.push({x:bonus.x*30+15,y:bonus.y*30+15,vx:(Math.random()-.5)*7,vy:-Math.random()*7-2,size:3+Math.random()*4,color:star?'#ffe27c':'#ff9edd',life,max:life,star:!hearts,heart:hearts,rotation:Math.random()*6});}
     if(!star)flyers.push({x:Math.max(40,Math.min(game.cols*30-40,bonus.x*30+15)),y:bonus.y*30,buddy:bonus.buddy,life:1500,max:1500});
   }
   announce(star?`Estrela coletada. ${event.score} pontos.`:`${BUDDIES[bonus.buddy]} resgatado. ${event.score} pontos.`);
@@ -249,7 +274,7 @@ function render(dt) {
     });
     flashes = flashes.filter(f=>f.life>0); flashes.forEach(f=>{f.life-=dt;ctx.fillStyle=`rgba(220,255,173,${Math.max(0,f.life/f.max)*.7})`;f.rows.forEach(y=>ctx.fillRect(0,y*30,W,30));});
     dropTrails = dropTrails.filter(t=>t.life>0); dropTrails.forEach(t=>{t.life-=dt;ctx.fillStyle=`rgba(205,242,255,${Math.max(0,t.life/200)*.15})`; t.cells.forEach(p=>ctx.fillRect(p.x*30+4,Math.max(0,(p.y-t.distance)*30),22,t.distance*30));});
-    particles=particles.filter(p=>p.life>0); particles.forEach(p=>{p.life-=dt;p.x+=p.vx*dt/16;p.y+=p.vy*dt/16;p.vy+=.045*dt;ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;if(p.star)drawStar(ctx,p.x,p.y,p.size,p.color,(p.rotation||0)+p.life/180);else ctx.fillRect(p.x,p.y,p.size,p.size);}); ctx.globalAlpha=1;
+    particles=particles.filter(p=>p.life>0); particles.forEach(p=>{p.life-=dt;p.x+=p.vx*dt/16;p.y+=p.vy*dt/16;p.vy+=.045*dt;ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;if(p.heart)drawHeart(ctx,p.x,p.y,p.size,p.color);else if(p.star)drawStar(ctx,p.x,p.y,p.size,p.color,(p.rotation||0)+p.life/180);else ctx.fillRect(p.x,p.y,p.size,p.size);}); ctx.globalAlpha=1;
     flyers=flyers.filter(f=>f.life>0);flyers.forEach(f=>{f.life-=dt;const progress=1-f.life/f.max;ctx.save();ctx.globalAlpha=Math.min(1,Math.max(0,f.life/350));drawBuddy(ctx,f.buddy,f.x,f.y-progress*105,70+Math.sin(progress*Math.PI)*15);ctx.restore();});
   }
   ctx.restore();
@@ -338,6 +363,101 @@ function renderRecords() {
     copy.append(title, note); row.append(copy, value); list.append(row);
   }
 }
+function journeyNotice(title,detail,kind='mission') {
+  const notice={title,detail,kind};
+  if(title==='RECORDE SUPERADO!'){journeyNotices=journeyNotices.filter(n=>n.kind!=='record');journeyNotices.unshift(notice);journeyNoticeTime=0;}
+  else journeyNotices.push(notice);
+}
+function renderJourneyEffects(dt) {
+  if(game.state==='paused'||document.hidden)return;
+  journeyNoticeTime=Math.max(0,journeyNoticeTime-dt);
+  if(!journeyNoticeTime){
+    const next=journeyNotices.shift();$('journey-notice').hidden=!next;
+    if(next){text('journey-notice-title',next.title);text('journey-notice-detail',next.detail);$('journey-notice').dataset.kind=next.kind;journeyNoticeTime=3000;announce(next.title+' · '+next.detail);}
+  }
+  if(recordCelebrationTime>0){
+    recordCelebrationTime=Math.max(0,recordCelebrationTime-dt);
+    if(prefs.effects&&!reducedMotion.matches){recordFireworks.update(dt);recordFireworks.draw(fireworksCtx);}
+  }
+}
+function rescueForAlbum(index) {
+  const result=album.rescue(index);if(!result)return;
+  lastRescued=index;runUnlocks+=result.unlocks.length;
+  storage.set('stack-rush-album-v1',album.snapshot());
+  if(result.first)journeyNotice('NOVO AMIGO!',`${result.name} entrou para o álbum!`,'album');
+  for(const style of result.unlocks){journeyNotice('VISUAL LIBERADO!',`${result.name} · ${style.label}`,'album');sound('unlock');}
+}
+function renderMissions() {
+  const signature=getLanguage()+JSON.stringify(game.missions);
+  if(signature===missionSignature)return;missionSignature=signature;
+  for(const id of ['mission-list','mission-dialog-list']){
+    const list=$(id);list.replaceChildren();
+    for(const mission of game.missions){
+      const row=document.createElement('div'),icon=document.createElement('span'),copy=document.createElement('div'),label=document.createElement('strong'),meta=document.createElement('span'),progress=document.createElement('progress');
+      row.className='mission-row'+(mission.completed?' completed':'');row.dataset.mission=mission.id;
+      icon.className='mission-icon';icon.textContent=mission.completed?'✓':mission.icon;icon.setAttribute('aria-hidden','true');
+      copy.className='mission-copy';setText(label,mission.label);
+      setText(meta,mission.completed?`Concluída · +${formatNumber(mission.reward)} PONTOS`:`${mission.progress} / ${mission.goal} · +${formatNumber(mission.reward)} PONTOS`);
+      progress.max=mission.goal;progress.value=mission.progress;setLabel(progress,mission.label);
+      copy.append(label,meta,progress);row.append(icon,copy);list.append(row);
+    }
+  }
+}
+function renderAlbumAvatars() {
+  document.querySelectorAll('[data-album-avatar]').forEach(canvas=>{
+    const context=canvas.getContext('2d');context.clearRect(0,0,160,160);drawBuddy(context,Number(canvas.dataset.albumAvatar),80,89,118);
+  });
+}
+function renderAlbum() {
+  const grid=$('album-grid');grid.replaceChildren();
+  text('album-summary',`${album.found} / ${BUDDIES.length} amigos · ${formatNumber(album.rescues)} resgates no álbum`);
+  BUDDIES.forEach((name,index)=>{
+    const entry=album.entry(index),next=album.next(index),card=document.createElement('article'),avatar=document.createElement('canvas'),title=document.createElement('h3'),count=document.createElement('span'),hint=document.createElement('p'),progress=document.createElement('progress');
+    card.className='album-card'+(!entry.rescues?' undiscovered':'');card.dataset.buddy=index;
+    avatar.width=160;avatar.height=160;avatar.dataset.albumAvatar=index;avatar.setAttribute('role','img');setLabel(avatar,name);
+    setText(title,name);count.className='album-rescues';setText(count,entry.rescues?`${formatNumber(entry.rescues)} resgates`:'Ainda não encontrado');
+    hint.className='album-next';setText(hint,next?`${next.label} · ${entry.rescues} / ${next.goal} resgates`:'Todos os visuais liberados!');
+    progress.max=next?.goal||10;progress.value=next?entry.rescues:10;setLabel(progress,`Progresso de ${name}`);
+    card.append(avatar,title,count,hint,progress);
+    for(const [kind,styles] of Object.entries(ALBUM_STYLES)){
+      const label=document.createElement('label'),caption=document.createElement('span'),select=document.createElement('select');
+      const labelText={color:'Cor',accessory:'Acessório',celebration:'Comemoração'}[kind];setText(caption,labelText);
+      select.dataset.buddy=index;select.dataset.style=kind;select.disabled=!entry.rescues;setLabel(select,`${labelText} de ${name}`);
+      for(const style of styles){const option=document.createElement('option');option.value=style.value;option.disabled=entry.rescues<style.goal;setText(option,option.disabled?`${style.label} · ${style.goal} resgates`:style.label);select.append(option);}
+      select.value=entry[kind];label.append(caption,select);card.append(label);
+    }
+    grid.append(card);
+  });
+  renderAlbumAvatars();
+}
+function rivalMessage() {
+  if(rival.beaten)return 'RECORDE SUPERADO!';
+  if(!rival.target)return game.mode==='sprint'?'Complete 40 linhas e marque seu primeiro tempo!':'Marque seu primeiro recorde!';
+  if(game.mode==='sprint')return `Seu melhor tempo: ${preciseTime(rival.target)}`;
+  const gap=rival.target-game.score;
+  return gap===0?'Recorde empatado. Mais 1 ponto!':`Faltam ${formatNumber(Math.max(0,gap))} pontos para o recorde!`;
+}
+function checkRival() {
+  if(game.state==='ready'||game.state==='paused')return;
+  let result=rival.update({score:game.score,elapsed:game.elapsed,lines:game.lines,finished:game.state==='over',won:endWon});
+  if(game.state==='over'&&newRecord&&!rival.target&&!rival.beaten){rival.beaten=true;result='record-beaten';}
+  if(result==='record-near')journeyNotice('TÁ QUASE!',game.mode==='sprint'?'Complete as 40 linhas para bater seu tempo!':rivalMessage(),'record');
+  if(result==='record-beaten'){
+    journeyNotice('RECORDE SUPERADO!',game.mode==='sprint'?`40 linhas em ${preciseTime(game.elapsed)}. Belo ritmo!`:`${formatNumber(game.score)} PONTOS`,'record');
+    buddyCheer('Você superou seu recorde!');sound('record');recordCelebrationTime=3200;
+    if(prefs.effects&&!reducedMotion.matches)recordFireworks.start();
+  }
+}
+function syncJourney() {
+  renderMissions();
+  const completed=game.missions.filter(m=>m.completed).length;
+  text('missions-count',`${completed} / ${game.missions.length}`);text('mission-dialog-summary',`${completed} / ${game.missions.length} missões · +${formatNumber(game.missionPoints)} PONTOS`);
+  $('missions-progress').value=game.missions.reduce((sum,m)=>sum+m.progress/m.goal,0);$('missions-progress').max=game.missions.length;
+  text('album-count',`${album.found} / ${BUDDIES.length}`);text('album-hint',album.rescues?`${formatNumber(album.rescues)} resgates no álbum`:'Resgate para colecionar');
+  text('rival-message',rivalMessage());text('rival-label',rival.beaten?'NOVO RECORDE PESSOAL!':'SEU PRÓXIMO RECORDE');
+  $('record-rival').classList.toggle('beaten',rival.beaten);$('rival-progress').max=rival.target||1;
+  $('rival-progress').value=rival.beaten?(rival.target||1):rival.target?(game.mode==='sprint'?Math.min(game.elapsed,rival.target):Math.min(game.score,rival.target)):0;
+}
 function processEvents() {
   const events=game.events.splice(0);
   const allClearEvent = events.find(event=>event.type==='all-clear');
@@ -347,7 +467,13 @@ function processEvents() {
     if(event.type==='rotate'||event.type==='hold'||event.type==='start')sound(event.type);
     if(event.type==='bomb')bombCelebration(event);
     if(event.type==='power')powerCelebration(event);
-    if(event.type==='bonus')bonusCelebration(event);
+    if(event.type==='bonus'){
+      if(event.bonus.kind==='buddy')rescueForAlbum(event.bonus.buddy);
+      bonusCelebration(event);
+    }
+    if(event.type==='mission'){
+      journeyNotice('MISSÃO CUMPRIDA!',`${event.mission.label} · +${formatNumber(event.score)} PONTOS`);sound('mission');
+    }
     if(event.type==='bird-hit'){
       sound('bird');birdPopups.push({...event.bird,score:event.score,life:1000});
       const message=`Passarinho! ${formatNumber(event.score)} pontos`;
@@ -379,6 +505,7 @@ function processEvents() {
   const powerEvent=events.find(e=>e.type==='power');
   if(powerEvent){const cleared=events.find(e=>e.type==='clear');callout(POWERS[powerEvent.power].label+'!',`${powerEvent.destroyed.length} BLOCOS${cleared?' · '+cleared.count+' LINHAS':''}`);}
   if(allClear)celebrateAllClear(allClearEvent);
+  checkRival();
   if(events.length){syncUI();renderPieces();}
 }
 let previousOverlay = '';
@@ -388,6 +515,7 @@ function updateOverlay() {
   previousOverlay=signature;
   const el=$('game-overlay');el.hidden=game.state==='playing';el.classList.toggle('paused',game.state==='paused');el.classList.toggle('over',game.state==='over');
   $('end-stats').hidden=game.state!=='over';
+  $('end-progress').hidden=game.state!=='over';
   setText($('play-button').querySelector('span'), game.state==='paused'?'Continuar':game.state==='over'?'Jogar de novo':'Jogar agora');
   if(game.state==='ready'){
     const rush=isRushMode(game.mode);
@@ -403,6 +531,9 @@ function updateOverlay() {
     const stats=$('end-stats');stats.replaceChildren();
     for(const [label,value] of [['PONTOS',formatNumber(game.score)],['LINHAS',String(game.lines)],...(game.mode==='sprint'?[]:[['RESGATES',String(game.rescued)]])]){const div=document.createElement('div'),strong=document.createElement('strong'),span=document.createElement('span');setText(strong, value);setText(span, label);div.append(strong,span);stats.append(div);}
     if(game.mode==='sprint'&&endWon)text('overlay-description',`40 linhas em ${preciseTime(game.elapsed)}. Belo ritmo!`);
+    text('end-missions',`${game.missions.filter(m=>m.completed).length} / ${game.missions.length} missões · +${formatNumber(game.missionPoints)} PONTOS`);
+    const next=lastRescued===null?null:album.next(lastRescued);
+    text('end-album',runUnlocks?`${runUnlocks} visuais liberados nesta partida!`:next?`${BUDDIES[lastRescued]} · ${next.remaining} resgates para ${next.label}`:game.mode==='sprint'?'Seu próximo desafio começa na próxima partida.':'Seu álbum continua na próxima partida.');
   }
 }
 function syncUI() {
@@ -443,11 +574,7 @@ function syncUI() {
   setLabel(rail,over?'Overdrive ativo':ready?'Ativar pulso do Overdrive':'Carregando pulso');
   $('power-panel').classList.toggle('unavailable',!isRush);$('board-frame').classList.toggle('overdrive',over);
   text('game-state',game.state==='playing'?(over?'OVERDRIVE · PONTOS ×2':'NO FLOW · PARTIDA EM ANDAMENTO'):game.state==='paused'?'PARTIDA PAUSADA':game.state==='over'?'PARTIDA ENCERRADA':'PRONTO PARA JOGAR');
-  const target=game.mode==='sprint'?40:8, completed=game.lines>=target;
-  text('challenge-title',completed?'Ritmo encontrado!':game.mode==='sprint'?'Uma linha de cada vez':'Encontre seu ritmo');
-  text('challenge-description',completed?'Desafio completo. Continue o seu flow!':game.mode==='sprint'?'Complete as 40 linhas. O tempo é seu adversário.':'Limpe 8 linhas em uma partida. O flow começa aqui.');
-  text('challenge-count',`${Math.min(game.lines,target)} / ${target}`);$('challenge-progress').value=Math.min(game.lines,target);$('challenge-progress').max=target;
-  if(completed&&!challengeAnnounced&&game.state!=='ready'){challengeAnnounced=true;announce('Desafio da partida concluído!');}
+  syncJourney();
   const record=records[recordKey(game.mode)];text('record',Number.isFinite(record)?game.mode==='sprint'?preciseTime(record):formatNumber(record):'—');
   $('pause-button').disabled=game.state==='ready'||game.state==='over';setLabel($('pause-button'),game.state==='paused'?'Continuar partida':'Pausar partida');$('pause-button').querySelector('use').setAttribute('href',game.state==='paused'?'#i-play':'#i-pause');
   const classic=game.mode==='sprint';
@@ -493,9 +620,10 @@ function resetGame(mode=game.mode) {
   prefs.mode=mode;storage.set('stack-rush-preferences',prefs);
   audio.reset();game.reset(mode,prefs.cols,prefs.rows);syncBoardLabel();particles=[];flashes=[];dropTrails=[];flyers=[];explosions=[];held={};touchGesture=null;latestPiece=null;
   powerEffects.reset();powerVisualTime=0;previewClock=0;birdPopups=[];
+  rival=new RecordRival(game.mode,records[recordKey(game.mode)]);missionSignature='';runUnlocks=0;lastRescued=null;journeyNotices=[];journeyNoticeTime=0;recordCelebrationTime=0;recordFireworks.reset();$('journey-notice').hidden=true;
   allClearRemaining=0;fireworks.reset();fireworksCtx.clearRect(0,0,300,600);$('all-clear').classList.remove('visible');
   clearTimeout(blastTimeout);$('board-frame').classList.remove('detonating');
-  clearTimeout(pickupTimeout);$('pickup-notice').classList.remove('visible');buddyCheer('Bora encaixar?',0);endReason='';endWon=false;newRecord=false;challengeAnnounced=false;previousOverlay='';
+  clearTimeout(pickupTimeout);$('pickup-notice').classList.remove('visible');buddyCheer('Bora encaixar?',0);endReason='';endWon=false;newRecord=false;previousOverlay='';
   $('game-callout').classList.remove('show');document.querySelectorAll('[data-mode]').forEach(el=>{const active=el.dataset.mode===mode;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});syncUI();renderPieces();
 }
 function togglePause(){held={};if(game.state==='playing'){game.pause();announce('Partida pausada.');}else if(game.state==='paused'){game.resume();announce('Partida retomada.');}syncUI();}
@@ -588,6 +716,13 @@ $('restart-button').addEventListener('click',()=>confirmThen(()=>{resetGame();st
 ['power-button','rail-power-button'].forEach(id=>$(id).addEventListener('click',()=>doAction('pulse')));
 document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>requestMode(button.dataset.mode==='rush'?selectedRushMode:button.dataset.mode)));
 document.querySelectorAll('[data-rush-mode]').forEach(button=>button.addEventListener('click',()=>requestMode(button.dataset.rushMode)));
+$('missions-button').addEventListener('click',()=>{renderMissions();openDialog($('missions-dialog'));});
+$('album-button').addEventListener('click',()=>{renderAlbum();openDialog($('album-dialog'));});
+$('album-grid').addEventListener('change',event=>{
+  const select=event.target;if(!select.matches('select[data-style]'))return;
+  if(album.equip(Number(select.dataset.buddy),select.dataset.style,select.value)){storage.set('stack-rush-album-v1',album.snapshot());renderAlbumAvatars();refreshCompanions();renderPieces();}
+});
+for(const sheet of [mascotImage,newMascotImage])sheet.addEventListener('load',()=>{refreshCompanions();renderAlbumAvatars();});
 $('records-button').addEventListener('click',()=>{renderRecords();openDialog($('records-dialog'));});
 $('play-stage').addEventListener('pointerdown',touchBoardDown,{passive:false});
 $('play-stage').addEventListener('pointermove',touchBoardMove,{passive:false});
@@ -640,7 +775,7 @@ function frame(now){
     for(const control of Object.values(held)){if(control.action!=='down'&&now-control.since>145&&now-control.last>40){doAction(control.action);control.last=now;}}
     game.tick(dt,Object.values(held).some(h=>h.action==='down'));processEvents();
   }
-  render(dt);renderAllClear(dt);uiClock+=dt;if(uiClock>75){syncUI();uiClock=0;}
+  render(dt);renderAllClear(dt);renderJourneyEffects(dt);uiClock+=dt;if(uiClock>75){syncUI();uiClock=0;}
   previewClock+=dt;
   if(previewClock>=80){previewClock=0;if(prefs.effects&&!reducedMotion.matches&&(game.state==='ready'||game.state==='playing')&&[game.hold,...game.queue.slice(0,5)].some(type=>POWER_TYPES.includes(type)))renderPieces();}
   requestAnimationFrame(frame);
@@ -660,7 +795,7 @@ $('language-setting').addEventListener('change',event=>{
   setLanguage(event.target.value);
   translatePage(document);
   previousOverlay='';
-  syncUI();renderPieces();renderRecords();syncBoardSettings();
+  missionSignature='';syncUI();renderPieces();renderRecords();syncBoardSettings();if($('album-dialog').open)renderAlbum();
 });
 SPECIAL_TYPES.forEach((type,i)=>mini(mixCtx,type,(i+.5)*450/SPECIAL_TYPES.length,27,13));
-syncBoardLabel();applyPrefs();syncUI();renderPieces();render(0);registerAgentTools();requestAnimationFrame(frame);
+refreshCompanions();syncBoardLabel();applyPrefs();syncUI();renderPieces();render(0);registerAgentTools();requestAnimationFrame(frame);

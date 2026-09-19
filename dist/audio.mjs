@@ -1,5 +1,5 @@
-import { TRACKS, arrangementAt } from './tracks.mjs?v=20260918-2';
-export { TRACKS } from './tracks.mjs?v=20260918-2';
+import { TRACKS, arrangementAt } from './tracks.mjs?v=20260918-3';
+export { TRACKS } from './tracks.mjs?v=20260918-3';
 const hz = midi => 440 * 2 ** ((midi - 69) / 12);
 
 export class ArcadeAudio {
@@ -175,6 +175,12 @@ export class ArcadeAudio {
       [523,659,784,1047].forEach(f=>this.voice(f,now+.62,.7,'sine',.035,false));
     }
     if(kind==='start')[440,660,880].forEach((f,i)=>note(f,.12,'triangle',i*.08,.05));
+    if(kind==='mission')[659,784,1047,1319].forEach((f,i)=>note(f,.22,'triangle',i*.085,.05));
+    if(kind==='unlock')[784,988,1175,1568].forEach((f,i)=>note(f,.28,'sine',i*.1,.05));
+    if(kind==='record'){
+      [523,659,784,1047,1319,1568].forEach((f,i)=>note(f,.3,'triangle',i*.09,.06));
+      [523,784,1047].forEach(f=>this.voice(f,now+.65,.6,'sine',.045,false));
+    }
     if(kind==='star')[1047,1319,1568].forEach((f,i)=>note(f,.16,'sine',i*.055,.05));
     if(kind==='gravity')[784,622,494,392].forEach((f,i)=>note(f,.12,'triangle',i*.05,.045));
     if(kind==='buddy')[659,784,988,1319].forEach((f,i)=>note(f,.2,'triangle',i*.075,.06));
