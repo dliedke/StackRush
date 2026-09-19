@@ -1,10 +1,10 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260918-4';
-import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260918-4';
-import { ArcadeAudio } from './audio.mjs?v=20260918-4';
-import { BUDDY_POWERS } from './engine.mjs?v=20260918-4';
-import { Fireworks } from './fireworks.mjs?v=20260918-4';
-import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260918-4';
-import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260918-4';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260918-5';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260918-5';
+import { ArcadeAudio } from './audio.mjs?v=20260918-5';
+import { BUDDY_POWERS } from './engine.mjs?v=20260918-5';
+import { Fireworks } from './fireworks.mjs?v=20260918-5';
+import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260918-5';
+import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260918-5';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
@@ -37,7 +37,7 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const powerEffects = new PowerEffects();
 let powerVisualTime=0, previewClock=0;
 let allClearRemaining = 0;
-let held = {}, touchGesture = null, calloutTimeout, impactTimeout, cheerTimeout, pickupTimeout, blastTimeout;
+let autoBurst = false, burstClock = 0, held = {}, touchGesture = null, calloutTimeout, impactTimeout, cheerTimeout, pickupTimeout, blastTimeout;
 let flyers = [], falls = [], explosions = [], birdPopups = [], buddyIndex = 0, latestPiece = null;
 const mascotImage = new Image(); mascotImage.src = new URL("./assets/mascots.png", import.meta.url).href;
 const newMascotImage = new Image(); newMascotImage.src = new URL('./assets/power-mascots.png',import.meta.url).href;
@@ -498,7 +498,7 @@ function processEvents() {
       callout(label,`${formatNumber(event.score)} PONTOS`); announce(`${event.count} linhas. ${label} ${event.score} pontos.`);
     }
     if(event.type==='pulse'){buddyCheer('Festa no Overdrive!');burst(event.rows,'#d2f86a',true);impact();sound('pulse');callout('OVERDRIVE','PONTOS ×2 · 8 SEGUNDOS');announce('Pulso ativado. Pontos de linhas em dobro por oito segundos.');}
-    if(event.type==='finish'){buddyCheer('Bora mais uma?');held={};endReason=event.reason;endWon=event.won;saveRecord();if(!allClear)sound('finish');announce(`${event.reason} ${game.score} pontos, ${game.lines} linhas.`);}
+    if(event.type==='finish'){buddyCheer('Bora mais uma?');held={};autoBurst=false;endReason=event.reason;endWon=event.won;saveRecord();if(!allClear)sound('finish');announce(`${event.reason} ${game.score} pontos, ${game.lines} linhas.`);}
   }
   const bombEvent=events.find(e=>e.type==='bomb');
   if(bombEvent){const cleared=events.find(e=>e.type==='clear');callout('KABOOM!',`${bombEvent.destroyed.length} BLOCOS${cleared?' · '+cleared.count+' LINHAS':''}`);}
@@ -573,7 +573,7 @@ function syncUI() {
   $('rail-power-fill').style.width=(over?game.overdrive/80:game.energy)+'%';
   setLabel(rail,over?'Overdrive ativo':ready?'Ativar pulso do Overdrive':'Carregando pulso');
   $('power-panel').classList.toggle('unavailable',!isRush);$('board-frame').classList.toggle('overdrive',over);
-  text('game-state',game.state==='playing'?(over?'OVERDRIVE · PONTOS ×2':'NO FLOW · PARTIDA EM ANDAMENTO'):game.state==='paused'?'PARTIDA PAUSADA':game.state==='over'?'PARTIDA ENCERRADA':'PRONTO PARA JOGAR');
+  text('game-state',game.state==='playing'?(autoBurst?'AUTO BURST · SOLTANDO SEM PARAR':over?'OVERDRIVE · PONTOS ×2':'NO FLOW · PARTIDA EM ANDAMENTO'):game.state==='paused'?'PARTIDA PAUSADA':game.state==='over'?'PARTIDA ENCERRADA':'PRONTO PARA JOGAR');
   syncJourney();
   const record=records[recordKey(game.mode)];text('record',Number.isFinite(record)?game.mode==='sprint'?preciseTime(record):formatNumber(record):'—');
   $('pause-button').disabled=game.state==='ready'||game.state==='over';setLabel($('pause-button'),game.state==='paused'?'Continuar partida':'Pausar partida');$('pause-button').querySelector('use').setAttribute('href',game.state==='paused'?'#i-play':'#i-pause');
@@ -618,13 +618,18 @@ function startGame() {
 function resetGame(mode=game.mode) {
   if(isRushMode(mode))selectedRushMode=prefs.rushMode=mode;
   prefs.mode=mode;storage.set('stack-rush-preferences',prefs);
-  audio.reset();game.reset(mode,prefs.cols,prefs.rows);syncBoardLabel();particles=[];flashes=[];dropTrails=[];flyers=[];explosions=[];held={};touchGesture=null;latestPiece=null;
+  audio.reset();autoBurst=false;game.reset(mode,prefs.cols,prefs.rows);syncBoardLabel();particles=[];flashes=[];dropTrails=[];flyers=[];explosions=[];held={};touchGesture=null;latestPiece=null;
   powerEffects.reset();powerVisualTime=0;previewClock=0;birdPopups=[];
   rival=new RecordRival(game.mode,records[recordKey(game.mode)]);missionSignature='';runUnlocks=0;lastRescued=null;journeyNotices=[];journeyNoticeTime=0;recordCelebrationTime=0;recordFireworks.reset();$('journey-notice').hidden=true;
   allClearRemaining=0;fireworks.reset();fireworksCtx.clearRect(0,0,300,600);$('all-clear').classList.remove('visible');
   clearTimeout(blastTimeout);$('board-frame').classList.remove('detonating');
   clearTimeout(pickupTimeout);$('pickup-notice').classList.remove('visible');buddyCheer('Bora encaixar?',0);endReason='';endWon=false;newRecord=false;previousOverlay='';
   $('game-callout').classList.remove('show');document.querySelectorAll('[data-mode]').forEach(el=>{const active=el.dataset.mode===mode;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});syncUI();renderPieces();
+}
+function toggleAutoBurst(){
+  if(game.state!=='playing')return;
+  autoBurst=!autoBurst;burstClock=0;
+  callout('AUTO BURST',autoBurst?'LIGADO · F PARA DESLIGAR':'DESLIGADO');announce(autoBurst?'Auto burst ligado.':'Auto burst desligado.');syncUI();
 }
 function togglePause(){held={};if(game.state==='playing'){game.pause();announce('Partida pausada.');}else if(game.state==='paused'){game.resume();announce('Partida retomada.');}syncUI();}
 function openDialog(dialog) {
@@ -757,6 +762,7 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Space' && e.target instanceof Element && e.target.closest('button,a'))return;
   if(e.code==='Enter'){if(game.state!=='playing'){e.preventDefault();if(!e.repeat)startGame();}return;}
   if(e.code==='Escape'||e.code==='KeyP'){e.preventDefault();if(!e.repeat)togglePause();return;}
+  if(e.code==='KeyF'){e.preventDefault();if(!e.repeat)toggleAutoBurst();return;}
   if(e.code==='KeyR'){e.preventDefault();if(!e.repeat)confirmThen(()=>{resetGame();startGame();});return;}
   const action=keyActions[e.code];if(!action||game.state!=='playing')return;e.preventDefault();if(e.repeat)return;
   doAction(action);if(['left','right','down'].includes(action))held[e.code]={action,since:performance.now(),last:performance.now()};
@@ -772,6 +778,7 @@ document.querySelectorAll('[data-action]').forEach(button=>{
 function frame(now){
   const dt=lastFrame?Math.min(now-lastFrame,100):16;lastFrame=now;
   if(game.state==='playing'){
+    if(autoBurst){burstClock+=dt;if(burstClock>=90){burstClock=0;doAction('drop');}}
     for(const control of Object.values(held)){if(control.action!=='down'&&now-control.since>145&&now-control.last>40){doAction(control.action);control.last=now;}}
     game.tick(dt,Object.values(held).some(h=>h.action==='down'));processEvents();
   }
