@@ -1,5 +1,5 @@
-import { TRACKS, arrangementAt } from './tracks.mjs?v=20260917-3';
-export { TRACKS } from './tracks.mjs?v=20260917-3';
+import { TRACKS, arrangementAt } from './tracks.mjs?v=20260918-2';
+export { TRACKS } from './tracks.mjs?v=20260918-2';
 const hz = midi => 440 * 2 ** ((midi - 69) / 12);
 
 export class ArcadeAudio {
@@ -178,6 +178,12 @@ export class ArcadeAudio {
     if(kind==='star')[1047,1319,1568].forEach((f,i)=>note(f,.16,'sine',i*.055,.05));
     if(kind==='gravity')[784,622,494,392].forEach((f,i)=>note(f,.12,'triangle',i*.05,.045));
     if(kind==='buddy')[659,784,988,1319].forEach((f,i)=>note(f,.2,'triangle',i*.075,.06));
+    if(kind==='bird')[1568,2093,1760].forEach((f,i)=>this.voice(f,now+i*.075,.09,'sine',.04,false,f*1.18));
+    if(kind==='streak')[523,659,784,1047,1319,1568].forEach((f,i)=>note(f,.17,'triangle',i*.07,.045));
+    if(kind==='ROCKET'){
+      this.voice(150,now,.65,'sawtooth',.035,false,1300);
+      this.noiseHit(now,.55,.085,'highpass',1200,false);
+    }
     if(kind==='VOLT'){
       this.noiseHit(now,.17,.085,'highpass',1800,false);
       [220,440,880,1320].forEach((f,i)=>note(f,.15,'sawtooth',i*.04,.024));

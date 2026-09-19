@@ -15,6 +15,11 @@ test('browser language, regional variants, fallback and saved preference',()=>{
 test('localized events, nested names, powers, points and records',()=>{
   setLanguage('en');assert.equal(getLocale(),'en-US');
   const cases=[
+    ['🚀 Foguetinho','🚀 Rocket'],['FOGUETINHO!','ROCKET!'],
+    ['Foguetinho! 9 blocos removidos. 225 pontos.','Rocket! 9 blocks removed. 225 points.'],
+    ['Passarinho! 1,200 pontos','Bird! 1,200 points'],
+    ['6 peças T seguidas!','6 T pieces in a row!'],
+    ['SEQUÊNCIA ×6 · T · 5 na fila','STREAK ×6 · T · 5 queued'],
     ['Estrela! 1,200 pontos','Star! 1,200 points'],
     ['Mimi resgatado! 500 pontos','Mimi rescued! 500 points'],
     ['Próximas peças: Dupla, Raio, Prisma, I','Next pieces: Duo, Lightning, Prism, I'],

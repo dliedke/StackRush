@@ -45,8 +45,13 @@ Rush and Zen throw a **Surprise Mix** at you. Classic blocks, plus some party gu
 | ⚡ **Lightning** | Zaps every block in the columns it touches, top to bottom. Vertical hits 1 column, horizontal hits **3**. |
 | 🌈 **Prism** | Finds the most common color on the board and makes it *vanish*. Poof. |
 | ↘️ **Diagonal** | Slices a diagonal line right across the board. Rotate to pick the angle. |
+| 🚀 **Rocket** | Launches on landing and clears every block in its path. Rotate to aim down, left, up or right. |
 | 💣 **Bomb** | A **9 × 9** kaboom. Rescues buddies in the blast and sends the leftovers tumbling. |
 | 🧩 **Mini, Duo, Corner, Horseshoe** | Weird little shapes for weird little gaps. |
+
+Every so often, a **six-piece streak** queues six identical classic pieces, with a glowing queue and a special sound. Hold still works, and buddy gifts wait until the streak finishes.
+
+🐦 **Birds** fly through empty board space. Hit one with a falling piece, a power, or a click/tap for **300 points × level** (doubled in Overdrive).
 
 Empty the whole board and you get an **ALL CLEAR**... with **fireworks**. 🎆
 

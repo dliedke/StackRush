@@ -4,7 +4,7 @@ export const MIN_BOARD = 4, MAX_BOARD = 100;
 // Hidden rows above the board: the stack may grow into them, like TETR.IO, before topping out.
 export const BUFFER = 2;
 const boardSize = (value, fallback) => Number.isFinite(value) ? Math.max(MIN_BOARD, Math.min(MAX_BOARD, Math.round(value))) : fallback;
-export const COLORS = { I: '#38d6ee', O: '#f6d454', T: '#ae79f7', S: '#a5db5e', Z: '#f17a9b', J: '#6e92f3', L: '#f5a35b', DOT: '#fff5ad', DUO: '#75f4d3', CORNER: '#ff95d5', BOMB: '#ff9b68', U: '#ffbc72', VOLT: '#ffe27c', PRISM: '#ff8bd1', DIAG: '#85e8fa' };
+export const COLORS = { I: '#38d6ee', O: '#f6d454', T: '#ae79f7', S: '#a5db5e', Z: '#f17a9b', J: '#6e92f3', L: '#f5a35b', DOT: '#fff5ad', DUO: '#75f4d3', CORNER: '#ff95d5', BOMB: '#ff9b68', U: '#ffbc72', VOLT: '#ffe27c', PRISM: '#ff8bd1', DIAG: '#85e8fa', ROCKET: '#ff9970' };
 export const COLOR_NAMES = { I:'ciano', O:'amarelo', T:'roxo', S:'verde', Z:'rosa', J:'azul', L:'laranja', DOT:'creme', DUO:'menta', CORNER:'rosa-claro', U:'pêssego', DIAG:'azul-gelo' };
 export const SHAPES = {
   I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -12,7 +12,7 @@ export const SHAPES = {
   S: [[0,1,1],[1,1,0],[0,0,0]], Z: [[1,1,0],[0,1,1],[0,0,0]],
   J: [[1,0,0],[1,1,1],[0,0,0]], L: [[0,0,1],[1,1,1],[0,0,0]],
   DOT: [[1]], DUO: [[1,1],[0,0]], CORNER: [[1,0],[1,1]],
-  BOMB: [[1]], U: [[1,0,1],[1,1,1],[0,0,0]],
+  BOMB: [[1]], ROCKET: [[1]], U: [[1,0,1],[1,1,1],[0,0,0]],
   VOLT: [[0,1,0],[0,1,0],[0,1,0]], PRISM: [[1,1],[1,1]], DIAG: [[1,0,0],[0,1,0],[0,0,1]]
 };
 export const BUDDIES = ['Mimi', 'Lumi', 'Pip', 'Nox', 'Turbo', 'Lino', 'Broca', 'Sexto', 'Polvi', 'Nuvi'];
@@ -20,10 +20,11 @@ export const BUDDY_TYPES = BUDDIES.map((_,i)=>`BUDDY${i}`);
 BUDDY_TYPES.forEach((type,i)=>{SHAPES[type]=[[1]];COLORS[type]='#f49ed8';});
 export const CLASSIC_TYPES = ['I','O','T','S','Z','J','L'];
 export const EXTRA_TYPES = ['DOT','DUO','CORNER','U'];
-export const POWER_TYPES = ['VOLT','PRISM','DIAG'];
+export const POWER_TYPES = ['VOLT','PRISM','DIAG','ROCKET'];
 export const SPECIAL_TYPES = [...EXTRA_TYPES,'BOMB',...POWER_TYPES];
-export const PIECE_NAMES = { I:'I', O:'O', T:'T', S:'S', Z:'Z', J:'J', L:'L', DOT:'Mini', DUO:'Dupla', CORNER:'Cantinho', U:'Ferradura', BOMB:'Bomba', VOLT:'Raio', PRISM:'Prisma', DIAG:'Diagonal', ...Object.fromEntries(BUDDY_TYPES.map((type,i)=>[type,BUDDIES[i]])) };
+export const PIECE_NAMES = { I:'I', O:'O', T:'T', S:'S', Z:'Z', J:'J', L:'L', DOT:'Mini', DUO:'Dupla', CORNER:'Cantinho', U:'Ferradura', BOMB:'Bomba', VOLT:'Raio', PRISM:'Prisma', DIAG:'Diagonal', ROCKET:'Foguetinho', ...Object.fromEntries(BUDDY_TYPES.map((type,i)=>[type,BUDDIES[i]])) };
 export const POWERS = {
+  ROCKET: { label:'FOGUETINHO', symbol:'🚀', description:'Dispara ao encaixar e destrói tudo no caminho. Gire para escolher a direção!' },
   VOLT: { label:'RAIO', symbol:'ϟ', description:'Limpa as colunas tocadas pela peça. Gire para atingir até 3!' },
   PRISM: { label:'PRISMA', symbol:'◇', description:'Apaga todos os blocos da cor mais presente.' },
   DIAG: { label:'DIAGONAL', symbol:'╲', description:'Limpa uma linha diagonal atravessando o tabuleiro. Gire para trocar a inclinação!' }
@@ -79,6 +80,8 @@ export class Game {
     this.elapsed = 0; this.combo = -1; this.maxCombo = 0; this.pieces = 0; this.energy = 0; this.overdrive = 0;
     this.powerBag = []; this.lastPower = null; this.powerUses = 0; this.allClears = 0;
     this.buddyEffects = {}; this.buddyBag = [];
+    this.pieceStreak = null; this.nextStreakAt = 14 + Math.floor(this.random() * 10);
+    this.birds = []; this.birdSerial = 0; this.birdsHit = 0; this.nextBirdAt = 4000;
     this.gravity = 0; this.lockTime = 0; this.lockResets = 0; this.events = []; this.backToBack = false; this.lastRotate = false;
     this.fillQueue(); this.spawn(); this.events = [];
   }
@@ -102,7 +105,8 @@ export class Game {
         if (!this.powerBag.length) {
           this.powerBag = [...POWER_TYPES];
           for (let i=this.powerBag.length-1;i>0;i--) { const j=Math.floor(this.random()*(i+1)); [this.powerBag[i],this.powerBag[j]]=[this.powerBag[j],this.powerBag[i]]; }
-          if (this.powerBag.at(-1) === this.lastPower) [this.powerBag[0],this.powerBag[2]] = [this.powerBag[2],this.powerBag[0]];
+          const last = this.powerBag.length - 1;
+          if (this.powerBag[last] === this.lastPower) [this.powerBag[0],this.powerBag[last]] = [this.powerBag[last],this.powerBag[0]];
         }
         this.lastPower = this.powerBag.pop();
         bag.splice(3 + Math.floor(this.random() * 3), 0, this.lastPower);
@@ -111,12 +115,24 @@ export class Game {
     }
   }
   spawn(type) {
+    if (!type) {
+      if (this.pieceStreak?.remaining === 0) this.pieceStreak = null;
+      if (this.state === 'playing' && this.mode !== 'sprint' && !this.pieceStreak && this.pieces >= this.nextStreakAt) {
+        const repeated = CLASSIC_TYPES[Math.floor(this.random() * CLASSIC_TYPES.length)];
+        this.pieceStreak = { type: repeated, remaining: 6 };
+        this.queue.unshift(...Array(6).fill(repeated));
+        this.nextStreakAt = this.pieces + 20 + Math.floor(this.random() * 12);
+        this.events.push({ type: 'piece-streak', piece: repeated, count: 6 });
+      }
+      if (this.pieceStreak) this.pieceStreak.remaining--;
+    }
     type ||= this.queue.shift(); this.fillQueue();
     const matrix = SHAPES[type].map(row => [...row]);
     this.active = { type, matrix, x: Math.floor((this.cols - matrix.length) / 2), y: SPECIAL_TYPES.includes(type) || BUDDY_TYPES.includes(type) || type === 'O' ? 0 : -1, rotation: 0 };
     this.gravity = 0; this.lockTime = 0; this.lockResets = 0; this.lastRotate = false;
     while (!this.valid(this.active) && this.valid({ ...this.active, y: this.active.y - 1 }, true)) this.active.y--;
     if (!this.valid(this.active)) this.finish(false, 'O tabuleiro encheu.');
+    else this.collectBirds(cells(this.active));
   }
   valid(piece, bounds = false) { return cells(piece).every(({x,y}) => x >= 0 && x < this.cols && y >= -BUFFER && y < this.rows && (bounds || !this.at(x,y))); }
   at(x, y) { return (y < 0 ? this.hidden[y + BUFFER] : this.board[y])?.[x] ?? null; }
@@ -133,19 +149,20 @@ export class Game {
     const next = { ...this.active, x: this.active.x + dx, y: this.active.y + dy };
     if (!this.valid(next)) return false;
     const onGround = this.grounded(); this.active = next; this.lastRotate = false;
+    this.collectBirds(cells(this.active));
     if (dx) this.resetLock(onGround);
     return true;
   }
   rotate(dir = 1) {
     if (this.state !== 'playing' || ![1,-1,2].includes(dir)) return false;
     const p = this.active;
-    if (p.type === 'O' || p.type === 'PRISM' || p.matrix.length === 1) return false;
+    if (p.type === 'O' || p.type === 'PRISM' || (p.matrix.length === 1 && p.type !== 'ROCKET')) return false;
     const nextRotation = (p.rotation + dir + 4) % 4;
     const matrix = dir === 2 ? rotateMatrix(rotateMatrix(p.matrix,1),1) : rotateMatrix(p.matrix, dir);
     const kicks = dir === 2 ? HALF_TURN_KICKS : SPECIAL_TYPES.includes(p.type) ? SPECIAL_KICKS : (p.type === 'I' ? I_KICKS : JLSTZ_KICKS)[`${p.rotation}>${nextRotation}`];
     for (const [dx,dy] of kicks) {
       const candidate = { ...p, matrix, rotation: nextRotation, x: p.x + dx, y: p.y + dy };
-      if (this.valid(candidate)) { const onGround = this.grounded(); this.active = candidate; this.lastRotate = true; this.resetLock(onGround); this.events.push({ type: 'rotate', angle: dir === 2 ? 180 : dir * 90 }); return true; }
+      if (this.valid(candidate)) { const onGround = this.grounded(); this.active = candidate; this.collectBirds(cells(candidate)); this.lastRotate = true; this.resetLock(onGround); this.events.push({ type: 'rotate', angle: dir === 2 ? 180 : dir * 90 }); return true; }
     }
     return false;
   }
@@ -153,6 +170,8 @@ export class Game {
   hardDrop() {
     if (this.state !== 'playing') return;
     const from = this.active.y; const ghost = this.ghost();
+    const swept = cells(this.active).flatMap(({x,y}) => Array.from({length:ghost.y-from+1},(_,step)=>({x,y:y+step})));
+    this.collectBirds(swept);
     if (ghost.y !== from) this.lastRotate = false;
     this.active = ghost; this.score += (ghost.y - from) * 2;
     this.events.push({ type: 'drop', cells: cells(this.active), color: COLORS[this.active.type], distance: ghost.y - from }); this.lock();
@@ -241,6 +260,12 @@ export class Game {
     }
   }
   powerPreview(piece = this.active) {
+    if (piece.type === 'ROCKET') {
+      const [dx,dy] = [[0,1],[-1,0],[0,-1],[1,0]][piece.rotation];
+      const line = [];
+      for (let x=piece.x,y=piece.y; x>=0&&x<this.cols&&y>=-BUFFER&&y<this.rows; x+=dx,y+=dy) line.push({x,y});
+      return { columns: [], target: null, cells: line };
+    }
     if (piece.type === 'VOLT') {
       const columns = [...new Set(cells(piece).map(cell => cell.x))].filter(x => x >= 0 && x < this.cols);
       return { columns, target: null, cells: columns.flatMap(x => Array.from({length:this.rows+BUFFER},(_,y)=>({x,y:y-BUFFER}))) };
@@ -276,7 +301,7 @@ export class Game {
     this.score += gained; this.powerUses++;
     if(MODES[this.mode].rush)this.energy=Math.min(100,this.energy+destroyed.length);
     const origin = { x:occupied.reduce((sum,c)=>sum+c.x,0)/occupied.length, y:occupied.reduce((sum,c)=>sum+c.y,0)/occupied.length };
-    this.events.push({ type:'power', power, columns:preview.columns, target:preview.target, line:preview.cells, origin, destroyed, score:gained });
+    this.events.push({ type:'power', power, rotation:this.active.rotation, columns:preview.columns, target:preview.target, line:preview.cells, origin, destroyed, score:gained });
     return destroyed.length;
   }
   blastArea(piece = this.active) {
@@ -338,6 +363,7 @@ export class Game {
     this.bonuses.push(bonus); this.events.push({ type: 'bonus-spawn', bonus: { ...bonus } }); return true;
   }
   collectBonuses(occupied) {
+    this.collectBirds(occupied);
     const collected = this.bonuses.filter(b => occupied.some(c => c.x === b.x && c.y === b.y));
     if (!collected.length) return;
     this.bonuses = this.bonuses.filter(b => !collected.includes(b));
@@ -350,13 +376,61 @@ export class Game {
       if(bonus.kind==='buddy'&&BUDDY_POWERS[bonus.buddy]){
         const power=BUDDY_POWERS[bonus.buddy];
         if(power.duration)this.buddyEffects[power.key]=power.duration;
-        if(power.pieces)this.queue.unshift(...power.pieces);
+        if(power.pieces)this.queueNext(power.pieces);
         if(power.drops){
           const pool=BUDDY_TYPES.filter((_,i)=>!BUDDY_POWERS[i]?.drops);
-          this.queue.unshift(...Array.from({length:power.drops},()=>pool[Math.floor(this.random()*pool.length)]));
+          this.queueNext(Array.from({length:power.drops},()=>pool[Math.floor(this.random()*pool.length)]));
         }
         this.events.push({type:'buddy-power',buddy:bonus.buddy,...power});
       }
+    }
+  }
+  queueNext(types) { this.queue.splice(this.pieceStreak?.remaining || 0, 0, ...types); }
+  spawnBird() {
+    if (this.mode === 'sprint' || this.state !== 'playing' || this.birds.length >= 2) return false;
+    const lanes = [];
+    for (let y=1;y<this.rows-1;y++) if (this.board[y].every(cell=>!cell) && !this.birds.some(b=>Math.floor(b.y)===y)) lanes.push(y);
+    if (!lanes.length) return false;
+    const y = lanes[Math.floor(this.random()*lanes.length)] + .5, direction = this.random()<.5?1:-1;
+    const bird = { id:++this.birdSerial, x:direction>0?.5:this.cols-.5, y, direction, speed:1.6+this.random()*.8 };
+    this.birds.push(bird); this.collectBirds(cells(this.active)); return true;
+  }
+  hitBird(id) {
+    if (this.state !== 'playing') return false;
+    const bird = this.birds.find(b=>b.id===id);
+    if (!bird) return false;
+    this.birds = this.birds.filter(b=>b.id!==id);
+    const score = 300 * this.level * (this.overdrive>0?2:1);
+    this.score += score; this.birdsHit++;
+    if (MODES[this.mode].rush) this.energy = Math.min(100,this.energy+8);
+    this.events.push({type:'bird-hit',bird:{...bird},score}); return true;
+  }
+  hitBirdAt(x,y) {
+    if (!Number.isFinite(x)||!Number.isFinite(y)||x<0||x>=this.cols||y<0||y>=this.rows) return false;
+    const bird = this.birds.find(b=>Math.hypot(b.x-x,b.y-y)<=.7);
+    return bird ? this.hitBird(bird.id) : false;
+  }
+  collectBirds(occupied) {
+    if (!this.birds.length || this.state !== 'playing') return;
+    const touched = new Set(occupied.map(c=>`${c.x},${c.y}`));
+    for (const bird of [...this.birds]) if (touched.has(`${Math.floor(bird.x)},${Math.floor(bird.y)}`)) this.hitBird(bird.id);
+  }
+  advanceBirds(dt) {
+    const active = cells(this.active);
+    this.collectBirds(active);
+    for (const bird of [...this.birds]) {
+      const distance = Math.min(this.cols+1,bird.speed*dt/1000), steps = Math.max(1,Math.ceil(distance/.2));
+      for (let step=0;step<steps;step++) {
+        bird.x += bird.direction*distance/steps;
+        if (bird.x<.4||bird.x>this.cols-.4||this.at(Math.floor(bird.x),Math.floor(bird.y))) {
+          this.birds = this.birds.filter(b=>b.id!==bird.id); break;
+        }
+        this.collectBirds(active);
+        if (!this.birds.includes(bird)) break;
+      }
+    }
+    if (this.elapsed >= this.nextBirdAt) {
+      this.spawnBird(); this.nextBirdAt = this.elapsed + 8000 + Math.floor(this.random()*6000);
     }
   }
   shiftBonuses(removedRows) {
@@ -366,6 +440,7 @@ export class Game {
     if (this.state !== 'playing' || !MODES[this.mode].rush || this.energy < 100 || this.overdrive > 0) return false;
     const rows = [];
     for (let y = this.rows - 1; y >= -BUFFER && rows.length < 3; y--) if (this.stack()[y + BUFFER].some(Boolean)) rows.push(y);
+    this.collectBirds(rows.flatMap(y=>Array.from({length:this.cols},(_,x)=>({x,y}))));
     this.shiftBonuses(rows);
     this.setStack(this.stack().filter((_, i) => !rows.includes(i - BUFFER)));
     this.energy = 0; this.overdrive = 8000; this.score += rows.length * 150 * this.level;
@@ -380,6 +455,7 @@ export class Game {
     this.bonuses = this.bonuses.map(b => ({...b, ttl: b.ttl - dt})).filter(b => b.ttl > 0);
     this.elapsed += dt; this.overdrive = Math.max(0, this.overdrive - dt);
     if (MODES[this.mode].duration && this.elapsed >= MODES[this.mode].duration) { this.elapsed = MODES[this.mode].duration; this.finish(true, 'O tempo acabou. Bela partida!'); return; }
+    if (this.mode !== 'sprint') this.advanceBirds(dt);
     const interval = this.buddyEffects.speed > 0 ? 25 : softDrop ? 32 : this.mode === 'zen' ? 1100 : Math.max(85, 760 * Math.pow(0.79, this.level - 1));
     this.gravity += dt;
     while (this.gravity >= interval) {
@@ -389,5 +465,5 @@ export class Game {
     if (this.grounded()) { this.lockTime += dt; if (this.lockTime >= 480) this.lock(); } else this.lockTime = 0;
   }
   finish(won, reason) { this.state = 'over'; this.events.push({ type: 'finish', won, reason }); }
-  snapshot() { return { buddyEffects: {...this.buddyEffects}, mode: this.mode, cols: this.cols, rows: this.rows, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Number.isFinite(b.ttl)?Math.ceil(b.ttl):null})), nextPieces: this.queue.slice(0,5) }; }
+  snapshot() { return { pieceStreak: this.pieceStreak ? {...this.pieceStreak} : null, birdsHit: this.birdsHit, birds: this.birds.map(b=>({...b})), buddyEffects: {...this.buddyEffects}, mode: this.mode, cols: this.cols, rows: this.rows, status: this.state, score: this.score, lines: this.lines, level: this.level, elapsedMs: Math.round(this.elapsed), energy: this.energy, overdriveMs: Math.round(this.overdrive), allClears: this.allClears, powerPiecesUsed: this.powerUses, activePower: POWER_TYPES.includes(this.active.type) ? { type:this.active.type, name:PIECE_NAMES[this.active.type], ...this.powerPreview() } : null, combo: Math.max(this.combo,0), pieces: this.pieces, stars: this.stars, rescued: this.rescued, bombs: this.bombs, destroyedBlocks: this.blastBlocks, bonuses: this.bonuses.map(b => ({kind:b.kind,x:b.x,y:b.y,remainingMs:Number.isFinite(b.ttl)?Math.ceil(b.ttl):null})), nextPieces: this.queue.slice(0,5) }; }
 }

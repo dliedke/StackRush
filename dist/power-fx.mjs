@@ -1,6 +1,34 @@
-import { COLORS } from './engine.mjs?v=20260917-3';
+import { COLORS } from './engine.mjs?v=20260918-2';
 
-const HUES = { VOLT: 45, PRISM: 305, DIAG: 185 };
+const HUES = { VOLT: 45, PRISM: 305, DIAG: 185, ROCKET: 20 };
+
+export function drawRocket(context, x, y, size, rotation = 0, time = 0, animate = true, ghost = false) {
+  context.save();context.translate(x,y);context.rotate(rotation*Math.PI/2);context.scale(size,size);
+  context.globalAlpha*=ghost?.45:1;
+  if(!ghost){
+    const flame=animate?.14+Math.sin(time/65)*.07:.14;
+    context.fillStyle='#ff8855';context.beginPath();context.moveTo(-.13,-.18);context.lineTo(0,-.45-flame);context.lineTo(.13,-.18);context.fill();
+    context.fillStyle='#fff0a1';context.beginPath();context.moveTo(-.065,-.18);context.lineTo(0,-.39-flame*.5);context.lineTo(.065,-.18);context.fill();
+  }
+  context.fillStyle='#ff786d';context.strokeStyle='#fff4d8';context.lineWidth=.025;
+  context.beginPath();context.moveTo(-.12,-.23);context.lineTo(-.32,-.29);context.lineTo(-.2,.08);context.lineTo(.2,.08);context.lineTo(.32,-.29);context.lineTo(.12,-.23);context.closePath();context.fill();
+  context.fillStyle=ghost?'#ffbc91':'#e9f7ff';context.beginPath();context.moveTo(0,.43);context.bezierCurveTo(-.27,.19,-.2,-.17,-.12,-.26);context.lineTo(.12,-.26);context.bezierCurveTo(.2,-.17,.27,.19,0,.43);context.fill();context.stroke();
+  context.fillStyle='#ff786d';context.beginPath();context.moveTo(0,.43);context.quadraticCurveTo(-.12,.32,-.15,.2);context.lineTo(.15,.2);context.quadraticCurveTo(.12,.32,0,.43);context.fill();
+  context.fillStyle='#4adcf0';context.beginPath();context.arc(0,-.02,.09,0,Math.PI*2);context.fill();context.stroke();
+  context.restore();
+}
+
+export function drawBird(context, bird, time, animate) {
+  context.save();context.translate(bird.x*30,bird.y*30);context.scale(bird.direction,1);
+  const flap=animate?Math.sin(time/95+bird.id)*5:0;
+  context.fillStyle='#ffb973';context.beginPath();context.moveTo(-7,1);context.lineTo(-14,-4);context.lineTo(-11,5);context.closePath();context.fill();
+  context.fillStyle='#7edff0';context.beginPath();context.ellipse(0,2,9,7,0,0,Math.PI*2);context.fill();
+  context.fillStyle='#d8fcff';context.beginPath();context.ellipse(2,4,5,3,0,0,Math.PI*2);context.fill();
+  context.fillStyle='#46aecb';context.beginPath();context.moveTo(0,2);context.quadraticCurveTo(-12,-11+flap,-8,-7+flap);context.quadraticCurveTo(7,-6,0,2);context.fill();
+  context.fillStyle='#ffd176';context.beginPath();context.moveTo(8,0);context.lineTo(14,3);context.lineTo(8,5);context.closePath();context.fill();
+  context.fillStyle='#172b3e';context.beginPath();context.arc(5,-1,1.6,0,Math.PI*2);context.fill();
+  context.fillStyle='#fff';context.beginPath();context.arc(5.4,-1.6,.5,0,Math.PI*2);context.fill();context.restore();
+}
 
 export function drawPowerBlock(context, x, y, size, type, time, animate, ghost) {
   const hue = HUES[type] + (animate ? time * .036 : 0) + x * .3 + y * .13;
@@ -67,7 +95,14 @@ export class PowerEffects {
       const ox=effect.origin.x*30+15,oy=effect.origin.y*30+15;
       context.save();context.globalCompositeOperation='lighter';context.globalAlpha=fade;context.lineCap='round';
       context.shadowColor=COLORS[effect.power];context.shadowBlur=15;
-      if(effect.power==='VOLT') {
+      if(effect.power==='ROCKET') {
+        const line=effect.line,travel=Math.min(1,effect.age/750),end=line.at(-1)||effect.origin;
+        const x=ox+(end.x-effect.origin.x)*30*travel,y=oy+(end.y-effect.origin.y)*30*travel;
+        context.strokeStyle='#ff995577';context.lineWidth=13;context.beginPath();context.moveTo(ox,oy);context.lineTo(x,y);context.stroke();
+        context.strokeStyle='#fff1b8';context.lineWidth=3;context.stroke();
+        context.globalCompositeOperation='source-over';context.shadowBlur=0;
+        drawRocket(context,x,y,35,effect.rotation,effect.age,true);
+      } else if(effect.power==='VOLT') {
         for(const bolt of effect.bolts) {
           const count=Math.max(2,Math.ceil(Math.min(1,effect.age/170)*bolt.length));
           context.beginPath();bolt.slice(0,count).forEach((p,i)=>{if(i===0)context.moveTo(p.x,p.y);else context.lineTo(p.x,p.y);});

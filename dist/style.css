@@ -2,6 +2,10 @@
 .upside-down{transform:rotate(180deg)}
 .buddy-effects{margin-top:12px;padding:12px;border:1px solid #ac83db;border-radius:10px;color:#eddbff;background:#292034;font-size:14px;line-height:1.6;text-align:center}
 .buddy-effects[hidden]{display:none}
+.piece-streak{margin-top:10px;padding:9px 12px;border:1px solid var(--streak-color,#7edff0);border-radius:9px;background:linear-gradient(110deg,#29213d,#142f38);color:var(--streak-color,#7edff0);font-size:12px;font-weight:700;letter-spacing:.6px;text-align:center}
+.piece-streak[hidden]{display:none}
+.streak-queue{filter:drop-shadow(0 0 5px var(--streak-color,#7edff0))}
+.loot-birds{color:#7edff0}
 .mascot-sprite.power-mascot{background:none}
 .power-mascot>canvas{width:100%;height:100%;display:block}
 .mascot-fallback .power-mascot:after{content:none}
