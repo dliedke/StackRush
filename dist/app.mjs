@@ -1,10 +1,10 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260918-5';
-import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260918-5';
-import { ArcadeAudio } from './audio.mjs?v=20260918-5';
-import { BUDDY_POWERS } from './engine.mjs?v=20260918-5';
-import { Fireworks } from './fireworks.mjs?v=20260918-5';
-import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260918-5';
-import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260918-5';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260919-1';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260919-1';
+import { ArcadeAudio } from './audio.mjs?v=20260919-1';
+import { BUDDY_POWERS } from './engine.mjs?v=20260919-1';
+import { Fireworks } from './fireworks.mjs?v=20260919-1';
+import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260919-1';
+import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260919-1';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
@@ -778,7 +778,7 @@ document.querySelectorAll('[data-action]').forEach(button=>{
 function frame(now){
   const dt=lastFrame?Math.min(now-lastFrame,100):16;lastFrame=now;
   if(game.state==='playing'){
-    if(autoBurst){burstClock+=dt;if(burstClock>=90){burstClock=0;doAction('drop');}}
+    if(autoBurst){burstClock+=dt;if(burstClock>=300){burstClock=0;doAction('drop');}}
     for(const control of Object.values(held)){if(control.action!=='down'&&now-control.since>145&&now-control.last>40){doAction(control.action);control.last=now;}}
     game.tick(dt,Object.values(held).some(h=>h.action==='down'));processEvents();
   }
