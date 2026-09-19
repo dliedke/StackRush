@@ -109,6 +109,18 @@
 .rail-power.active{background:#1f2a12;border-color:var(--lime);color:var(--lime);box-shadow:0 0 18px #d2f82533;animation:none}
 .rail-power.active .rail-power-meter{background:#31382a}
 }
+/* Auto burst no celular: liga/desliga e ajusta a velocidade na coluna direita. */
+.burst-rail{display:none}
+@media(max-width:720px){
+.burst-rail{display:flex;flex-direction:column;align-items:stretch;gap:6px;width:100%;margin-top:10px}
+.burst-rail button{min-height:36px;border-radius:8px;background:#25272f;border:1px solid #3a3c46;color:#c9cbd3;font-family:var(--display);font-size:12px;font-weight:700;line-height:1;touch-action:manipulation}
+.burst-rail button:disabled{opacity:.45}
+.burst-rail #burst-toggle.active{background:#1f2a12;border-color:var(--lime);color:var(--lime)}
+.burst-speed{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.burst-speed[hidden]{display:none}
+.burst-speed button{font-size:20px}
+.burst-speed span{text-align:center;font-family:var(--display);font-size:12px;font-weight:700;color:var(--lime)}
+}
 @media(prefers-reduced-motion:reduce){.rail-power:enabled{animation:none}}
 /* Fora de uma partida em andamento, a página rola normalmente, inclusive sobre o tabuleiro. */
 #board{touch-action:auto}

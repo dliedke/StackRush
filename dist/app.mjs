@@ -1,15 +1,17 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260919-1';
-import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260919-1';
-import { ArcadeAudio } from './audio.mjs?v=20260919-1';
-import { BUDDY_POWERS } from './engine.mjs?v=20260919-1';
-import { Fireworks } from './fireworks.mjs?v=20260919-1';
-import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260919-1';
-import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260919-1';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260919-2';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260919-2';
+import { ArcadeAudio } from './audio.mjs?v=20260919-2';
+import { BUDDY_POWERS } from './engine.mjs?v=20260919-2';
+import { Fireworks } from './fireworks.mjs?v=20260919-2';
+import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260919-2';
+import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260919-2';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
 const storedPrefs = storage.get('stack-rush-preferences', {});
-const prefs = { muted: storedPrefs.muted === true, sound: typeof storedPrefs.sound === 'boolean' ? storedPrefs.sound : true, music: typeof storedPrefs.music === 'boolean' ? storedPrefs.music : true, volume: Number.isFinite(storedPrefs.volume) ? Math.max(0,Math.min(1,storedPrefs.volume)) : .32, effects: typeof storedPrefs.effects === 'boolean' ? storedPrefs.effects : !matchMedia('(prefers-reduced-motion: reduce)').matches, ghost: typeof storedPrefs.ghost === 'boolean' ? storedPrefs.ghost : true, mode: Object.hasOwn(MODES, storedPrefs.mode) ? storedPrefs.mode : 'rush', rushMode: MODES[storedPrefs.rushMode]?.rush ? storedPrefs.rushMode : 'rush', cols: Number.isInteger(storedPrefs.cols) ? storedPrefs.cols : COLS, rows: Number.isInteger(storedPrefs.rows) ? storedPrefs.rows : ROWS };
+const prefs = { muted: storedPrefs.muted === true, sound: typeof storedPrefs.sound === 'boolean' ? storedPrefs.sound : true, music: typeof storedPrefs.music === 'boolean' ? storedPrefs.music : true, volume: Number.isFinite(storedPrefs.volume) ? Math.max(0,Math.min(1,storedPrefs.volume)) : .32, effects: typeof storedPrefs.effects === 'boolean' ? storedPrefs.effects : !matchMedia('(prefers-reduced-motion: reduce)').matches, ghost: typeof storedPrefs.ghost === 'boolean' ? storedPrefs.ghost : true, mode: Object.hasOwn(MODES, storedPrefs.mode) ? storedPrefs.mode : 'rush', rushMode: MODES[storedPrefs.rushMode]?.rush ? storedPrefs.rushMode : 'rush', cols: Number.isInteger(storedPrefs.cols) ? storedPrefs.cols : COLS, rows: Number.isInteger(storedPrefs.rows) ? storedPrefs.rows : ROWS, burstSpeed: Number.isInteger(storedPrefs.burstSpeed) ? Math.max(1,Math.min(8,storedPrefs.burstSpeed)) : 4 };
+// Auto burst: milliseconds between drops for speed levels 1-8 (level 4 is the default).
+const BURST_INTERVALS = [1000,650,450,300,200,140,90,60];
 let records = storage.get('stack-rush-records', {});
 if (!records || typeof records !== 'object') records = {};
 const RUSH_MODES = ['rush1','rush','rush5','rush10'];
@@ -573,6 +575,9 @@ function syncUI() {
   $('rail-power-fill').style.width=(over?game.overdrive/80:game.energy)+'%';
   setLabel(rail,over?'Overdrive ativo':ready?'Ativar pulso do Overdrive':'Carregando pulso');
   $('power-panel').classList.toggle('unavailable',!isRush);$('board-frame').classList.toggle('overdrive',over);
+  const burstOn=autoBurst&&(game.state==='playing'||game.state==='paused');
+  $('burst-toggle').disabled=game.state!=='playing';$('burst-toggle').classList.toggle('active',burstOn);$('burst-toggle').setAttribute('aria-pressed',String(burstOn));$('burst-speed').hidden=!burstOn;
+  text('burst-level',`${prefs.burstSpeed}/${BURST_INTERVALS.length}`);$('burst-slower').disabled=prefs.burstSpeed<=1;$('burst-faster').disabled=prefs.burstSpeed>=BURST_INTERVALS.length;
   text('game-state',game.state==='playing'?(autoBurst?'AUTO BURST · SOLTANDO SEM PARAR':over?'OVERDRIVE · PONTOS ×2':'NO FLOW · PARTIDA EM ANDAMENTO'):game.state==='paused'?'PARTIDA PAUSADA':game.state==='over'?'PARTIDA ENCERRADA':'PRONTO PARA JOGAR');
   syncJourney();
   const record=records[recordKey(game.mode)];text('record',Number.isFinite(record)?game.mode==='sprint'?preciseTime(record):formatNumber(record):'—');
@@ -630,6 +635,12 @@ function toggleAutoBurst(){
   if(game.state!=='playing')return;
   autoBurst=!autoBurst;burstClock=0;
   callout('AUTO BURST',autoBurst?'LIGADO · F PARA DESLIGAR':'DESLIGADO');announce(autoBurst?'Auto burst ligado.':'Auto burst desligado.');syncUI();
+}
+function changeBurstSpeed(step){
+  if(!autoBurst||game.state==='ready'||game.state==='over')return;
+  const speed=Math.max(1,Math.min(BURST_INTERVALS.length,prefs.burstSpeed+step));
+  if(speed!==prefs.burstSpeed){prefs.burstSpeed=speed;storage.set('stack-rush-preferences',prefs);}
+  callout('AUTO BURST',`VELOCIDADE ${speed} / ${BURST_INTERVALS.length}`);syncUI();
 }
 function togglePause(){held={};if(game.state==='playing'){game.pause();announce('Partida pausada.');}else if(game.state==='paused'){game.resume();announce('Partida retomada.');}syncUI();}
 function openDialog(dialog) {
@@ -728,6 +739,7 @@ $('album-grid').addEventListener('change',event=>{
   if(album.equip(Number(select.dataset.buddy),select.dataset.style,select.value)){storage.set('stack-rush-album-v1',album.snapshot());renderAlbumAvatars();refreshCompanions();renderPieces();}
 });
 for(const sheet of [mascotImage,newMascotImage])sheet.addEventListener('load',()=>{refreshCompanions();renderAlbumAvatars();});
+for(const [id,handler] of [['burst-toggle',toggleAutoBurst],['burst-slower',()=>changeBurstSpeed(-1)],['burst-faster',()=>changeBurstSpeed(1)]])$(id).addEventListener('click',e=>{e.currentTarget.blur();handler();});
 $('records-button').addEventListener('click',()=>{renderRecords();openDialog($('records-dialog'));});
 $('play-stage').addEventListener('pointerdown',touchBoardDown,{passive:false});
 $('play-stage').addEventListener('pointermove',touchBoardMove,{passive:false});
@@ -763,6 +775,8 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Enter'){if(game.state!=='playing'){e.preventDefault();if(!e.repeat)startGame();}return;}
   if(e.code==='Escape'||e.code==='KeyP'){e.preventDefault();if(!e.repeat)togglePause();return;}
   if(e.code==='KeyF'){e.preventDefault();if(!e.repeat)toggleAutoBurst();return;}
+  const burstStep=e.key==='+'||e.key==='='||e.code==='NumpadAdd'?1:e.key==='-'||e.key==='_'||e.code==='NumpadSubtract'?-1:0;
+  if(burstStep){if(autoBurst){e.preventDefault();if(!e.repeat)changeBurstSpeed(burstStep);}return;}
   if(e.code==='KeyR'){e.preventDefault();if(!e.repeat)confirmThen(()=>{resetGame();startGame();});return;}
   const action=keyActions[e.code];if(!action||game.state!=='playing')return;e.preventDefault();if(e.repeat)return;
   doAction(action);if(['left','right','down'].includes(action))held[e.code]={action,since:performance.now(),last:performance.now()};
@@ -778,7 +792,7 @@ document.querySelectorAll('[data-action]').forEach(button=>{
 function frame(now){
   const dt=lastFrame?Math.min(now-lastFrame,100):16;lastFrame=now;
   if(game.state==='playing'){
-    if(autoBurst){burstClock+=dt;if(burstClock>=300){burstClock=0;doAction('drop');}}
+    if(autoBurst){burstClock+=dt;if(burstClock>=BURST_INTERVALS[prefs.burstSpeed-1]){burstClock=0;doAction('drop');}}
     for(const control of Object.values(held)){if(control.action!=='down'&&now-control.since>145&&now-control.last>40){doAction(control.action);control.last=now;}}
     game.tick(dt,Object.values(held).some(h=>h.action==='down'));processEvents();
   }

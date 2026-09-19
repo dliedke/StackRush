@@ -110,6 +110,7 @@ Time it with a bonus and watch your score go *brrrrr*.
 | Hold | `C` or `SHIFT` |
 | Activate pulse | `D` |
 | Auto burst (non-stop hard drops, toggle) | `F` |
+| Auto burst speed (while it is on) | `+` `-` |
 | Pause | `ESC` |
 
 📱 **On mobile:** drag sideways to move, tap to rotate, pull down a bit to soft drop, pull down far to **SLAM** it.
