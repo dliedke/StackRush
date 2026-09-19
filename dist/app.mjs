@@ -1,10 +1,10 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260918-3';
-import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260918-3';
-import { ArcadeAudio } from './audio.mjs?v=20260918-3';
-import { BUDDY_POWERS } from './engine.mjs?v=20260918-3';
-import { Fireworks } from './fireworks.mjs?v=20260918-3';
-import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260918-3';
-import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260918-3';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260918-4';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260918-4';
+import { ArcadeAudio } from './audio.mjs?v=20260918-4';
+import { BUDDY_POWERS } from './engine.mjs?v=20260918-4';
+import { Fireworks } from './fireworks.mjs?v=20260918-4';
+import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260918-4';
+import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260918-4';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
@@ -741,7 +741,7 @@ window.addEventListener('pagehide',e=>{if(e.persisted)audio.stopMusic();else aud
 document.querySelectorAll('dialog').forEach(dialog=>{
   dialog.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>dialog.close('cancel')));
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close('cancel');}});
-  dialog.addEventListener('close',()=>{const shouldResume=dialogWasPlaying;dialogWasPlaying=false;if(dialog.id==='confirm-dialog'&&dialog.returnValue==='confirm'&&queuedConfirm){const action=queuedConfirm;queuedConfirm=null;action();}else{queuedConfirm=null;if(shouldResume&&game.state==='paused')game.resume();}held={};syncUI();});
+  dialog.addEventListener('close',()=>{const shouldResume=dialogWasPlaying;dialogWasPlaying=false;if(dialog.id==='confirm-dialog'&&dialog.returnValue==='confirm'&&queuedConfirm){const action=queuedConfirm;queuedConfirm=null;action();}else{queuedConfirm=null;if(shouldResume&&game.state==='paused')game.resume();}held={};if(document.activeElement instanceof HTMLElement)document.activeElement.blur();syncUI();});
 });
 $('confirm-button').addEventListener('click',()=>$('confirm-dialog').close('confirm'));
 $('fullscreen-button').addEventListener('click',async()=>{
