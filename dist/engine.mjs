@@ -1,4 +1,4 @@
-import { createMissions, advanceMissions } from './progression.mjs?v=20260919-3';
+import { createMissions, advanceMissions } from './progression.mjs?v=20260919-4';
 
 export const COLS = 10;
 export const ROWS = 20;

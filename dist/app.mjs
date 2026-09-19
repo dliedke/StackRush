@@ -1,10 +1,10 @@
-import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260919-3';
-import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260919-3';
-import { ArcadeAudio } from './audio.mjs?v=20260919-3';
-import { BUDDY_POWERS } from './engine.mjs?v=20260919-3';
-import { Fireworks } from './fireworks.mjs?v=20260919-3';
-import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260919-3';
-import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260919-3';
+import { t, getLocale, getLanguage, setLanguage, setText, setLabel, capturePage, translatePage } from './i18n.mjs?v=20260919-4';
+import { Game, COLS, ROWS, MIN_BOARD, BUFFER, MODES, SHAPES, COLORS, COLOR_NAMES, SPECIAL_TYPES, POWER_TYPES, POWERS, PIECE_NAMES, BUDDIES, BUDDY_TYPES, cells } from './engine.mjs?v=20260919-4';
+import { ArcadeAudio } from './audio.mjs?v=20260919-4';
+import { BUDDY_POWERS } from './engine.mjs?v=20260919-4';
+import { Fireworks } from './fireworks.mjs?v=20260919-4';
+import { drawPowerBlock, drawCharge, drawRocket, drawBird, PowerEffects } from './power-fx.mjs?v=20260919-4';
+import { BuddyAlbum, ALBUM_STYLES, RecordRival } from './progression.mjs?v=20260919-4';
 
 const $ = id => document.getElementById(id);
 const storage = { get(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} } };
@@ -659,6 +659,14 @@ function doAction(action) {
   if(action==='down'){if(game.move(0,1))game.score++;}
   if(action==='drop')game.hardDrop();if(action==='hold')game.swap();if(action==='pulse')game.pulse();processEvents();syncUI();
 }
+// Com o auto burst ligado, segurar ←/→ leva a peça direto até a parede no mesmo quadro, então os
+// dois cantos continuam alcançáveis mesmo nas velocidades em que a peça cai em poucos quadros.
+function slideToWall(action) {
+  if(game.state!=='playing')return;
+  let dir=action==='left'?-1:1;if(game.buddyEffects.flip>0)dir=-dir;
+  let moved=false;for(let step=0;step<game.cols&&game.move(dir);step++)moved=true;
+  if(moved){processEvents();syncUI();}
+}
 function touchBoardDown(event) {
   if(game.state!=='playing'||touchGesture||event.isPrimary===false)return;
   if(event.target.closest('button'))return;
@@ -792,8 +800,12 @@ document.querySelectorAll('[data-action]').forEach(button=>{
 function frame(now){
   const dt=lastFrame?Math.min(now-lastFrame,100):16;lastFrame=now;
   if(game.state==='playing'){
+    for(const control of Object.values(held)){
+      if(control.action==='down'||now-control.since<=145)continue;
+      if(autoBurst){slideToWall(control.action);control.last=now;}
+      else if(now-control.last>40){doAction(control.action);control.last=now;}
+    }
     if(autoBurst){burstClock+=dt;if(burstClock>=BURST_INTERVALS[prefs.burstSpeed-1]){burstClock=0;doAction('drop');}}
-    for(const control of Object.values(held)){if(control.action!=='down'&&now-control.since>145&&now-control.last>40){doAction(control.action);control.last=now;}}
     game.tick(dt,Object.values(held).some(h=>h.action==='down'));processEvents();
   }
   render(dt);renderAllClear(dt);renderJourneyEffects(dt);uiClock+=dt;if(uiClock>75){syncUI();uiClock=0;}
